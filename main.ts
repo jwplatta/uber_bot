@@ -1,50 +1,64 @@
-import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import {
+  App, WorkspaceLeaf,
+  MarkdownView, Modal,
+  Notice, Plugin, PluginSettingTab,
+  Setting
+} from 'obsidian';
+export const VIEW_TYPE_CHAT = "chat-view";
+import { ChatView } from "./ChatView";
 
-// Remember to rename these classes and interfaces!
 
-interface MyPluginSettings {
+interface NoteSecretarySettings {
 	mySetting: string;
 }
 
-const DEFAULT_SETTINGS: MyPluginSettings = {
+const DEFAULT_SETTINGS: NoteSecretarySettings = {
 	mySetting: 'default'
 }
 
-export default class MyPlugin extends Plugin {
-	settings: MyPluginSettings;
+export default class NoteSecretary extends Plugin {
+	settings: NoteSecretarySettings;
 
 	async onload() {
 		await this.loadSettings();
 
+    this.registerView(
+      VIEW_TYPE_CHAT,
+      (leaf) => new ChatView(leaf, this.app)
+    );
+
+
 		// This creates an icon in the left ribbon.
-		const ribbonIconEl = this.addRibbonIcon('dice', 'Sample Plugin', (evt: MouseEvent) => {
+		const ribbonIconEl = this.addRibbonIcon('bot', 'NoteSecretary', (evt: MouseEvent) => {
 			// Called when the user clicks the icon.
-			new Notice('This is a notice!');
+			new Notice('Starting Chat');
+      this.activateView();
 		});
 		// Perform additional things with the ribbon
-		ribbonIconEl.addClass('my-plugin-ribbon-class');
+		ribbonIconEl.addClass('note-secretary-ribbon-class');
 
 		// This adds a status bar item to the bottom of the app. Does not work on mobile apps.
 		const statusBarItemEl = this.addStatusBarItem();
-		statusBarItemEl.setText('Status Bar Text');
+		statusBarItemEl.setText('note-secretary Status');
 
 		// This adds a simple command that can be triggered anywhere
 		this.addCommand({
-			id: 'open-sample-modal-simple',
-			name: 'Open sample modal (simple)',
+			id: 'open-note-secretary-chat',
+			name: 'Chat',
 			callback: () => {
-				new SampleModal(this.app).open();
+				new ChatModal(this.app).open();
 			}
 		});
-		// This adds an editor command that can perform some operation on the current editor instance
+
 		this.addCommand({
-			id: 'sample-editor-command',
-			name: 'Sample editor command',
-			editorCallback: (editor: Editor, view: MarkdownView) => {
-				console.log(editor.getSelection());
-				editor.replaceSelection('Sample Editor Command');
-			}
+			id: 'index-notes',
+			name: 'Index Notes',
+			// editorCallback: (editor: Editor, view: MarkdownView) => {
+			// 	console.log(editor.getSelection());
+			// 	editor.replaceSelection('Sample Editor Command');
+			// }
 		});
+
 		// This adds a complex command that can check whether the current state of the app allows execution of the command
 		this.addCommand({
 			id: 'open-sample-modal-complex',
@@ -56,7 +70,7 @@ export default class MyPlugin extends Plugin {
 					// If checking is true, we're simply "checking" if the command can be run.
 					// If checking is false, then we want to actually perform the operation.
 					if (!checking) {
-						new SampleModal(this.app).open();
+						new ChatModal(this.app).open();
 					}
 
 					// This command will only show up in Command Palette when the check function returns true
@@ -73,14 +87,31 @@ export default class MyPlugin extends Plugin {
 		this.registerDomEvent(document, 'click', (evt: MouseEvent) => {
 			console.log('click', evt);
 		});
-
-		// When registering intervals, this function will automatically clear the interval when the plugin is disabled.
-		this.registerInterval(window.setInterval(() => console.log('setInterval'), 5 * 60 * 1000));
 	}
 
-	onunload() {
+	onunload() {}
 
-	}
+  async activateView() {
+    const { workspace } = this.app;
+
+    let leaf: WorkspaceLeaf | null = null;
+    const leaves = workspace.getLeavesOfType(VIEW_TYPE_CHAT);
+
+    if (leaves.length > 0) {
+      // A leaf with our view already exists, use that
+      leaf = leaves[0];
+    } else {
+      // Our view could not be found in the workspace, create a new leaf
+      // in the right sidebar for it
+      leaf = workspace.getRightLeaf(false);
+      await leaf?.setViewState({ type: VIEW_TYPE_CHAT, active: true });
+    }
+
+    // "Reveal" the leaf in case it is in a collapsed sidebar
+    if (leaf) {
+      workspace.revealLeaf(leaf);
+    }
+  }
 
 	async loadSettings() {
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
@@ -91,7 +122,7 @@ export default class MyPlugin extends Plugin {
 	}
 }
 
-class SampleModal extends Modal {
+class ChatModal extends Modal {
 	constructor(app: App) {
 		super(app);
 	}
@@ -108,9 +139,9 @@ class SampleModal extends Modal {
 }
 
 class SampleSettingTab extends PluginSettingTab {
-	plugin: MyPlugin;
+	plugin: NoteSecretary;
 
-	constructor(app: App, plugin: MyPlugin) {
+	constructor(app: App, plugin: NoteSecretary) {
 		super(app, plugin);
 		this.plugin = plugin;
 	}

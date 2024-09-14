@@ -1,5 +1,7 @@
 {
   "compilerOptions": {
+    "jsx": "react-jsx",
+    // "compilerOptions": { "jsx": "react-jsx"
     "baseUrl": ".",
     "inlineSourceMap": true,
     "inlineSources": true,

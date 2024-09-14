@@ -4,5 +4,53 @@ This CSS file will be included with your plugin, and
 available in the app when your plugin is enabled.
 
 If your plugin does not need CSS, delete this file.
-
 */
+
+.chat-header {
+  padding: 12px;
+  background-color: var(--background-primary);
+  border-bottom: 1px solid #ccc;
+}
+
+.chat-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.chat-messages {
+  flex-grow: 1;
+  padding: 16px;
+  overflow-y: auto;
+  background-color: var(--background-secondary);
+}
+
+.chat-user-message {
+  margin-bottom: 10px;
+  padding: 12px 12px;
+  background-color: var(--background-secondary-alt);
+  border-radius: 6px;
+}
+
+.chat-bot-message {
+  margin-bottom: 10px;
+  padding: 12px 12px;
+  background-color: var(--background-secondary);
+  border-radius: 6px;
+}
+
+.chat-input-container {
+  display: flex;
+  padding: 8px;
+  /* border-top: 1px solid #ccc; */
+  background-color: var(--background-secondary);
+}
+
+.chat-input {
+  flex-grow: 1;
+  padding: 12px;
+  border-radius: 4px;
+  /* border: 1px solid #ccc; */
+  margin-right: 8px;
+}
