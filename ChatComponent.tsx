@@ -17,13 +17,15 @@ interface Message {
 }
 
 const openai = new OpenAI({
-  apiKey: process.env['OPENAI_API_KEY'], // This is the default and can be omitted
+  apiKey: "",
+  dangerouslyAllowBrowser: true
 });
 
 export const ChatComponent: FC<ChatComponentProps> = ({ app }) => {
-  const [messages, setMessages] = useState<OpenAI.Chat.ChatCompletionMessageParam[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const [isStreaming, setIsStreaming] = useState(false);
 
   useEffect(() => {
     scrollToBottom();
@@ -47,28 +49,50 @@ export const ChatComponent: FC<ChatComponentProps> = ({ app }) => {
         { role: "system", content: "You are a helpful assistant." },
       ]
 
-      messagesContext = messagesContext.concat(messages);
+      messagesContext = messagesContext.concat(messages as OpenAI.Chat.ChatCompletionMessageParam[]);
       messagesContext.push(newMessage);
 
       const params: OpenAI.Chat.ChatCompletionCreateParams = {
         messages: messagesContext, //[{ role: 'user', content: 'Say this is a test' }],
         model: "gpt-4o-mini",
-        stream: false
+        stream: true
       };
 
-      // const files = app.vault.getMarkdownFiles();
-      const completion = await openai.chat.completions.create(params);
-      // const chatCompletion: OpenAI.Chat.ChatCompletion = await client.chat.completions.create(params);
+      setMessages([...messages, newMessage as Message]);
 
-      // const newFile = await app.vault.create('new-file.md', '---\n---\n# New File');
-      // console.log(newFile);
-      const msg = completion.choices[0].message.content || '';
-      const msgResponse: OpenAI.Chat.ChatCompletionMessageParam = {
-        role: 'assistant',
-        content: msg,
-      };
+      try {
+        const completion = await openai.chat.completions.create(params);
+        const assistantMessage: Message = {
+          role: 'assistant',
+          content: '',
+        };
 
-      setMessages([...messages, newMessage, msgResponse]);
+        setIsStreaming(true);
+
+        for await (const chunk of completion) {
+          const contentChunk = chunk.choices[0].delta?.content || '';
+          assistantMessage.content += contentChunk;
+
+          setMessages(prevMessages => {
+            const updatedMessages = [...prevMessages];
+            if (updatedMessages.length > 0 && updatedMessages[updatedMessages.length - 1].role === 'assistant') {
+              updatedMessages[updatedMessages.length - 1] = assistantMessage;
+            } else {
+              updatedMessages.push(assistantMessage);
+            }
+            return updatedMessages;
+          });
+
+          // Scroll as the message updates
+          scrollToBottom();
+        }
+      } catch (error) {
+        console.error('Error streaming response:', error);
+      } finally {
+        setIsStreaming(false);
+      }
+
+      // Reset input field
       setInput('');
     }
   };
