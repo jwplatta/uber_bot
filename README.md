@@ -1,4 +1,4 @@
-# Instropection Plugin for Obsidian
+# Note Secretary Plugin for Obsidian
 
 ## How to use
 
