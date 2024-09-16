@@ -1,9 +1,10 @@
 import { FC, KeyboardEvent, useRef, useEffect, useState } from 'react';
+import { SquarePen } from 'lucide-react';
 import { App } from 'obsidian';
 // import { Configuration, OpenAIApi, ChatCompletionRequestMessage } from "openai";
 import OpenAI from 'openai';
 import * as dotenv from "dotenv";
-
+import ReactMarkdown from 'react-markdown';
 
 dotenv.config();
 
@@ -83,7 +84,6 @@ export const ChatComponent: FC<ChatComponentProps> = ({ app }) => {
             return updatedMessages;
           });
 
-          // Scroll as the message updates
           scrollToBottom();
         }
       } catch (error) {
@@ -92,7 +92,6 @@ export const ChatComponent: FC<ChatComponentProps> = ({ app }) => {
         setIsStreaming(false);
       }
 
-      // Reset input field
       setInput('');
     }
   };
@@ -117,23 +116,32 @@ export const ChatComponent: FC<ChatComponentProps> = ({ app }) => {
     }
   };
 
+  const handleNewChatButtonClick = () => {
+    setMessages([]);
+    console.log("New chat button clicked");
+  }
+
   return (
     <div className="chat-container">
       <div className="chat-header">
         <h1>Chat</h1>
-        <a href="#" onClick={() => handleFileLinkClick('new-file.md')}>
+        {/* <a href="#" onClick={() => handleFileLinkClick('new-file.md')}>
           (Open file)
-        </a>
+        </a> */}
+        <div className="new-chat-button" onClick={handleNewChatButtonClick}>
+          <SquarePen size={24} />
+        </div>
       </div>
       <div className="chat-messages">
         {messages.map((message, index) => (
           message.role === 'assistant' ? (
             <div key={index} className="chat-bot-message">
-              {message.content || ""}
+              <ReactMarkdown>{message.content || ""}</ReactMarkdown>
             </div>
           ) : (
           <div key={index} className="chat-user-message">
-            {message.content || ""}
+
+            <ReactMarkdown>{message.content || ""}</ReactMarkdown>
           </div>
         )))}
         <div ref={messagesEndRef} />
