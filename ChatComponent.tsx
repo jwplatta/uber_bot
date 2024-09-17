@@ -1,10 +1,10 @@
 import { FC, KeyboardEvent, useRef, useEffect, useState } from 'react';
 import { SquarePen } from 'lucide-react';
 import { App } from 'obsidian';
-// import { Configuration, OpenAIApi, ChatCompletionRequestMessage } from "openai";
 import OpenAI from 'openai';
 import * as dotenv from "dotenv";
 import ReactMarkdown from 'react-markdown';
+import { AssistantMessage } from './AssistantMessage';
 
 dotenv.config();
 
@@ -26,7 +26,6 @@ export const ChatComponent: FC<ChatComponentProps> = ({ app }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
-  const [isStreaming, setIsStreaming] = useState(false);
 
   useEffect(() => {
     scrollToBottom();
@@ -68,8 +67,6 @@ export const ChatComponent: FC<ChatComponentProps> = ({ app }) => {
           content: '',
         };
 
-        setIsStreaming(true);
-
         for await (const chunk of completion) {
           const contentChunk = chunk.choices[0].delta?.content || '';
           assistantMessage.content += contentChunk;
@@ -88,8 +85,6 @@ export const ChatComponent: FC<ChatComponentProps> = ({ app }) => {
         }
       } catch (error) {
         console.error('Error streaming response:', error);
-      } finally {
-        setIsStreaming(false);
       }
 
       setInput('');
@@ -128,19 +123,16 @@ export const ChatComponent: FC<ChatComponentProps> = ({ app }) => {
         {/* <a href="#" onClick={() => handleFileLinkClick('new-file.md')}>
           (Open file)
         </a> */}
-        <div className="new-chat-button" onClick={handleNewChatButtonClick}>
+        <div className="new-chat-button tool-tip" onClick={handleNewChatButtonClick} data-tooltip="Start a new chat">
           <SquarePen size={24} />
         </div>
       </div>
       <div className="chat-messages">
         {messages.map((message, index) => (
           message.role === 'assistant' ? (
-            <div key={index} className="chat-bot-message">
-              <ReactMarkdown>{message.content || ""}</ReactMarkdown>
-            </div>
+            <AssistantMessage key={index} app={app} role={message.role} content={message.content} />
           ) : (
           <div key={index} className="chat-user-message">
-
             <ReactMarkdown>{message.content || ""}</ReactMarkdown>
           </div>
         )))}
