@@ -1,5 +1,5 @@
 import { FC, KeyboardEvent, useRef, useEffect, useState } from 'react';
-import { SquarePen } from 'lucide-react';
+import { SquarePen, ArrowUp } from 'lucide-react';
 import { App } from 'obsidian';
 import OpenAI from 'openai';
 import * as dotenv from "dotenv";
@@ -26,10 +26,17 @@ export const ChatComponent: FC<ChatComponentProps> = ({ app }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const textareaRef = useRef(null as any);
+  const [showInput, setShowInput] = useState(true);
 
   useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto'; // Reset the height first
+      textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px'; // Adjust to content
+    }
+
     scrollToBottom();
-  }, [messages]);
+  }, [messages, input]);
 
   const scrollToBottom = () => {
     console.log(messages);
@@ -39,6 +46,8 @@ export const ChatComponent: FC<ChatComponentProps> = ({ app }) => {
   };
 
   const handleSendMessage = async () => {
+    setShowInput(false);
+
     if (input.trim()) {
       const newMessage: OpenAI.Chat.ChatCompletionMessageParam = {
         role: 'user',
@@ -88,26 +97,26 @@ export const ChatComponent: FC<ChatComponentProps> = ({ app }) => {
       }
 
       setInput('');
+      setShowInput(true);
     }
   };
 
-  const handleFileLinkClick = (filePath: string) => {
-    app.workspace.openLinkText(filePath, ''); // Open the file in Obsidian
-  };
-
+  // TODO:
+  // const handleFileLinkClick = (filePath: string) => {
+  //   app.workspace.openLinkText(filePath, '');
+  // };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' && e.shiftKey) {
+      // #noop;
+    } else if (e.key === 'Enter') {
       if (e.metaKey || e.ctrlKey) {
-        // Command + Enter (macOS) or Ctrl + Enter (Windows/Linux)
+
         handleSendMessage();
       } else {
         e.preventDefault();
         handleSendMessage();
       }
-      // else if (!e.shiftKey) {
-      //   // Just Enter key without Shift (prevent shift + enter newline)
-      // }
     }
   };
 
@@ -119,7 +128,6 @@ export const ChatComponent: FC<ChatComponentProps> = ({ app }) => {
   return (
     <div className="chat-container">
       <div className="chat-header">
-        <h1>Chat</h1>
         {/* <a href="#" onClick={() => handleFileLinkClick('new-file.md')}>
           (Open file)
         </a> */}
@@ -138,24 +146,18 @@ export const ChatComponent: FC<ChatComponentProps> = ({ app }) => {
         )))}
         <div ref={messagesEndRef} />
       </div>
-      <div className="chat-input-container">
-        {/* <input
-          type="text"
+      {showInput && <div className="chat-input-container">
+        <textarea
+          ref={textareaRef}
+          className="chat-input"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Type your message..."
-          className="chat-input"
-        /> */}
-        <textarea
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="Type your message (Shift + Enter for newline)..."
-          className="chat-input"
-          rows={3}
+          rows={1}
         />
-      </div>
+        <ArrowUp size={36} className="chat-input-button" onClick={handleSendMessage} />
+      </div>}
     </div>
   );
 };
