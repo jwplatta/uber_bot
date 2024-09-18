@@ -1,19 +1,37 @@
 import {
   App, WorkspaceLeaf,
   MarkdownView, Modal,
-  Notice, Plugin, PluginSettingTab,
-  Setting
+  Notice, Plugin,
+	PluginSettingTab,
+  Setting, setIcon
 } from 'obsidian';
 export const VIEW_TYPE_CHAT = "chat-view";
 import { ChatView } from "./ChatView";
+import { assistantSettings } from './src/settings/AssistantSettings';
 
 
 interface NoteSecretarySettings {
-	mySetting: string;
+	assistants: {
+		assistant: string;
+		assistantDefinitionsPath: string;
+	},
+	chatHistory: {
+		chatHistoryPath: string;
+	},
+	toggleProfileSettings: boolean,
+	toggleChatHistorySettings: boolean
 }
 
 const DEFAULT_SETTINGS: NoteSecretarySettings = {
-	mySetting: 'default'
+	assistants: {
+		assistant: 'assistant.md',
+		assistantDefinitionsPath: 'NoteSecretary/Assistants',
+	},
+	chatHistory: {
+		chatHistoryPath: 'NoteSecretary/ChatHistory',
+	},
+	toggleProfileSettings: false,
+	toggleChatHistorySettings: false,
 }
 
 export default class NoteSecretary extends Plugin {
@@ -27,11 +45,11 @@ export default class NoteSecretary extends Plugin {
       (leaf) => new ChatView(leaf, this.app)
     );
 
+		this.app.vault.on('modify', (file) => {
+			console.log('File modified: ', file.path);
+		})
 
-		// This creates an icon in the left ribbon.
 		const ribbonIconEl = this.addRibbonIcon('bot', 'NoteSecretary', (evt: MouseEvent) => {
-			// Called when the user clicks the icon.
-			new Notice('Starting Chat');
       this.activateView();
 		});
 		// Perform additional things with the ribbon
@@ -80,13 +98,13 @@ export default class NoteSecretary extends Plugin {
 		});
 
 		// This adds a settings tab so the user can configure various aspects of the plugin
-		this.addSettingTab(new SampleSettingTab(this.app, this));
+		this.addSettingTab(new NoteSecretarySettingTab(this.app, this));
 
 		// If the plugin hooks up any global DOM events (on parts of the app that doesn't belong to this plugin)
 		// Using this function will automatically remove the event listener when this plugin is disabled.
-		this.registerDomEvent(document, 'click', (evt: MouseEvent) => {
-			console.log('click', evt);
-		});
+		// this.registerDomEvent(document, 'click', (evt: MouseEvent) => {
+		// 	console.log('click', evt);
+		// });
 	}
 
 	onunload() {}
@@ -103,7 +121,8 @@ export default class NoteSecretary extends Plugin {
     } else {
       // Our view could not be found in the workspace, create a new leaf
       // in the right sidebar for it
-      leaf = workspace.getRightLeaf(false);
+      // leaf = workspace.getLeaf(false);
+			leaf = workspace.getRightLeaf(false);
       await leaf?.setViewState({ type: VIEW_TYPE_CHAT, active: true });
     }
 
@@ -138,7 +157,7 @@ class ChatModal extends Modal {
 	}
 }
 
-class SampleSettingTab extends PluginSettingTab {
+class NoteSecretarySettingTab extends PluginSettingTab {
 	plugin: NoteSecretary;
 
 	constructor(app: App, plugin: NoteSecretary) {
@@ -147,19 +166,19 @@ class SampleSettingTab extends PluginSettingTab {
 	}
 
 	display(): void {
-		const {containerEl} = this;
-
+		const { containerEl } = this;
 		containerEl.empty();
 
-		new Setting(containerEl)
-			.setName('Setting #1')
-			.setDesc('It\'s a secret')
-			.addText(text => text
-				.setPlaceholder('Enter your secret')
-				.setValue(this.plugin.settings.mySetting)
-				.onChange(async (value) => {
-					this.plugin.settings.mySetting = value;
-					await this.plugin.saveSettings();
-				}));
+		// NOTE: Settings Header
+		containerEl.createEl('h1', { text: 'Note Secretary Settings' });
+		addHorizontalRule(containerEl);
+
+		assistantSettings(containerEl, this.plugin, this);
 	}
+}
+
+function addHorizontalRule(containerEl: HTMLElement) {
+	const separator = document.createElement('hr');
+	separator.style.margin = '1rem 0';
+	containerEl.appendChild(separator);
 }
