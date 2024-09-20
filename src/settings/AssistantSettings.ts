@@ -29,16 +29,39 @@ export function assistantSettings(containerEl: HTMLElement, plugin: NoteSecretar
 	});
 
 	new Setting(settingsContainer)
-		.setName('Assistant Path')
+		.setName('Assistants Path')
 		.setDesc('Folder where assistant definitions are stored.')
-		.addText(text => text);
+		.addText(text => {
+			text
+				.setPlaceholder(plugin.settings.assistants.assistantDefinitionsPath)
+				.setValue(plugin.settings.assistants.assistantDefinitionsPath)
+				.onChange(async(value) => {
+					plugin.settings.assistants.assistantDefinitionsPath = value;
+					await plugin.saveSettings();
+				})
+				.then((cb) => {
+          cb.inputEl.style.width = '100%';
+        })
+		});
 
 	new Setting(settingsContainer)
 		.setName('Assistant')
 		.setDesc('Select a default assistant.')
-		.addDropdown(dropdown => {
-			dropdown.addOption('Assistant 1', 'assistant1');
-			dropdown.addOption('Assistant 2', 'assistant2');
-			dropdown.addOption('Assistant 3', 'assistant3');
+		.addDropdown((dropdown) => {
+			const assistantFiles = plugin.app.vault.getFolderByPath(
+				plugin.settings.assistants.assistantDefinitionsPath
+			)?.children
+
+			if (assistantFiles) {
+				assistantFiles.forEach(file => {
+					console.log("assistant path: ", file)
+					dropdown.addOption(file.path, file.name);
+				})
+			}
+
+			dropdown.onChange(async (value) => {
+				plugin.settings.assistants.assistant = value;
+        await plugin.saveSettings();
+			})
 		});
 }
