@@ -1,15 +1,15 @@
 import { FC, KeyboardEvent, useRef, useEffect, useState } from 'react';
 import { SquarePen, ArrowUp } from 'lucide-react';
-import { App } from 'obsidian';
+import { App, TFile } from 'obsidian';
 import OpenAI from 'openai';
-import * as dotenv from "dotenv";
 import ReactMarkdown from 'react-markdown';
 import { AssistantMessage } from './AssistantMessage';
-
-dotenv.config();
+import { NoteSecretarySettings } from './main'
 
 interface ChatComponentProps {
   app: App;
+  settings: NoteSecretarySettings;
+  assistantFile: TFile | null;
 }
 
 interface Message {
@@ -17,19 +17,70 @@ interface Message {
   content: string;
 }
 
-const openai = new OpenAI({
-  apiKey: "",
-  dangerouslyAllowBrowser: true
-});
-
-export const ChatComponent: FC<ChatComponentProps> = ({ app }) => {
+export const ChatComponent: FC<ChatComponentProps> = ({ app, settings, assistantFile }) => {
+  const [chatHistoryFile, setChatHistoryFile] = useState<TFile|null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const textareaRef = useRef(null as any);
   const [showInput, setShowInput] = useState(true);
+  const [systemText, setSystemText] = useState("");
+  const openai = new OpenAI({
+    apiKey: settings.openAI.key,
+    dangerouslyAllowBrowser: true
+  });
+
+  const startNewChatHistory = async () => {
+    const historyFrontmatter = `---\nassistant: ${assistantFile?.path}\nkeywords: \ncreated: ${new Date().toLocaleString()}\n---\n`;
+    const title = `${assistantFile?.basename}-${Date.now()}.md`;
+    const chatHistFile = await app.vault.create(
+      settings.chatHistory.chatHistoryPath + "/" + title,
+      historyFrontmatter
+    );
+    setChatHistoryFile(chatHistFile);
+  }
 
   useEffect(() => {
+    const startChatHistory = async () => {
+      if (!chatHistoryFile) {
+        await startNewChatHistory();
+        // const historyFrontmatter = `---\nassistant: ${assistantFile?.path}\ncreated: ${new Date().toLocaleString()}\n---\n`;
+        // const title = `${assistantFile?.basename}-${Date.now()}.md`;
+        // const chatHistFile = await app.vault.create(
+        //   settings.chatHistory.chatHistoryPath + "/" + title,
+        //   historyFrontmatter
+        // );
+
+        // console.log("chatHistoryFile: ", chatHistFile);
+        // setChatHistoryFile(chatHistFile);
+        // const chatHistoryText = await app.vault.read(chatHistoryFile);
+        // const chatHistory = chatHistoryText.split('\n');
+        // setChatHistoryPath(chatHistory);
+      }
+    }
+    const readAssistantFile = async () => {
+      console.log(assistantFile);
+
+      if (assistantFile) {
+        const fileMetadata = app.metadataCache.getFileCache(assistantFile)
+        console.log(fileMetadata?.frontmatter)
+
+        const assistantFileText = await app.vault.read(assistantFile);
+
+        if(fileMetadata && fileMetadata.frontmatterPosition?.end.line !== undefined) {
+          const sysText = assistantFileText.split('\n').slice(
+            fileMetadata.frontmatterPosition?.end.line + 1
+          ).join('\n')
+
+          console.log("assistantFile TEXT:\n", sysText)
+          setSystemText(sysText)
+        }
+      }
+    }
+
+    readAssistantFile();
+    startChatHistory();
+
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto'; // Reset the height first
       textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px'; // Adjust to content
@@ -49,21 +100,27 @@ export const ChatComponent: FC<ChatComponentProps> = ({ app }) => {
     setShowInput(false);
 
     if (input.trim()) {
+      let messagesContext: OpenAI.Chat.ChatCompletionMessageParam[] = [
+        {
+          role: "system",
+          content: systemText
+        }
+      ]
+      messagesContext = messagesContext.concat(messages as OpenAI.Chat.ChatCompletionMessageParam[]);
+
       const newMessage: OpenAI.Chat.ChatCompletionMessageParam = {
         role: 'user',
         content: input,
       };
+      if (chatHistoryFile) {
+        app.vault.append(chatHistoryFile, `${newMessage.role}: ${newMessage.content}\n***\n`);
+      }
 
-      let messagesContext: OpenAI.Chat.ChatCompletionMessageParam[] = [
-        { role: "system", content: "You are a helpful assistant." },
-      ]
-
-      messagesContext = messagesContext.concat(messages as OpenAI.Chat.ChatCompletionMessageParam[]);
       messagesContext.push(newMessage);
 
       const params: OpenAI.Chat.ChatCompletionCreateParams = {
-        messages: messagesContext, //[{ role: 'user', content: 'Say this is a test' }],
-        model: "gpt-4o-mini",
+        messages: messagesContext,
+        model: "gpt-4o-mini", //TODO: move to settings
         stream: true
       };
 
@@ -82,6 +139,7 @@ export const ChatComponent: FC<ChatComponentProps> = ({ app }) => {
 
           setMessages(prevMessages => {
             const updatedMessages = [...prevMessages];
+
             if (updatedMessages.length > 0 && updatedMessages[updatedMessages.length - 1].role === 'assistant') {
               updatedMessages[updatedMessages.length - 1] = assistantMessage;
             } else {
@@ -91,6 +149,9 @@ export const ChatComponent: FC<ChatComponentProps> = ({ app }) => {
           });
 
           scrollToBottom();
+        }
+        if (chatHistoryFile) {
+          app.vault.append(chatHistoryFile, `${assistantMessage.role}: ${assistantMessage.content}\n***\n`);
         }
       } catch (error) {
         console.error('Error streaming response:', error);
@@ -111,7 +172,6 @@ export const ChatComponent: FC<ChatComponentProps> = ({ app }) => {
       // #noop;
     } else if (e.key === 'Enter') {
       if (e.metaKey || e.ctrlKey) {
-
         handleSendMessage();
       } else {
         e.preventDefault();
@@ -120,20 +180,21 @@ export const ChatComponent: FC<ChatComponentProps> = ({ app }) => {
     }
   };
 
-  const handleNewChatButtonClick = () => {
+  const handleNewChatButtonClick = async () => {
+    await startNewChatHistory();
     setMessages([]);
     console.log("New chat button clicked");
   }
 
   return (
     <div className="chat-container">
-      <div className="chat-header">
-        {/* <a href="#" onClick={() => handleFileLinkClick('new-file.md')}>
-          (Open file)
-        </a> */}
+      <div className="chat-header flex justify-between items-center">
         <div className="new-chat-button tool-tip" onClick={handleNewChatButtonClick} data-tooltip="Start a new chat">
           <SquarePen size={24} />
         </div>
+        <h1>
+          {assistantFile?.basename || ""}
+        </h1>
       </div>
       <div className="chat-messages">
         {messages.map((message, index) => (
