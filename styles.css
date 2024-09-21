@@ -191,3 +191,11 @@
 .chat-history-cell {
   padding: 8px;
 }
+
+.assistant-suggestion-header {
+  color: var(--text-selection);
+}
+
+.assistant-suggestion-path {
+  color: var(--text-normal);
+}
