@@ -2,9 +2,11 @@ import {
   App, WorkspaceLeaf,
   MarkdownView, Modal,
 	Plugin,
-	PluginSettingTab
+	PluginSettingTab,
+	SuggestModal,
+	TFile
 } from 'obsidian';
-import { VIEW_TYPE_CHAT, ChatView } from "./ChatView";
+import { VIEW_TYPE_CHAT, ChatView } from "./src/chat/ChatView";
 import { VIEW_TYPE_CHAT_HISTORY, ChatHistoryView } from "./src/chat_history/ChatHistoryView";
 import { assistantSettings } from './src/settings/AssistantSettings';
 import { chatHistorySettings } from './src/settings/ChatHistorySettings';
@@ -51,8 +53,8 @@ export default class NoteSecretary extends Plugin {
     this.registerView(
       VIEW_TYPE_CHAT,
       (leaf) => {
-				const defaultAssistantFile = this.app.vault.getFileByPath(this.settings.assistants.assistant)
-				return new ChatView(leaf, this.app, this.settings, defaultAssistantFile)
+				// const defaultAssistantFile = this.app.vault.getFileByPath(this.settings.assistants.assistant)
+				return new ChatView(leaf, this.app, this.settings, null)
 			}
     );
 
@@ -85,10 +87,10 @@ export default class NoteSecretary extends Plugin {
 
 		// This adds a simple command that can be triggered anywhere
 		this.addCommand({
-			id: 'open-note-secretary-chat',
-			name: 'Chat',
+			id: 'select-assistant',
+			name: 'Select Assistant',
 			callback: () => {
-				new ChatModal(this.app).open();
+				new SearchAssistantModal(this.app, this.settings, this).open();
 			}
 		});
 
@@ -141,6 +143,31 @@ export default class NoteSecretary extends Plugin {
 		}
 	}
 
+	async startNewChat(assistantFile: TFile) {
+		const { workspace } = this.app;
+
+		let leaf: WorkspaceLeaf | null = null;
+		const leaves = workspace.getLeavesOfType(VIEW_TYPE_CHAT);
+
+		if (leaves.length > 0) {
+			leaf = leaves[0];
+		} else {
+			leaf = workspace.getRightLeaf(false);
+		}
+
+		await leaf?.setViewState(
+			{
+				type: VIEW_TYPE_CHAT,
+				active: true,
+				state: { assistantFile: assistantFile }
+			}
+		);
+
+		if (leaf) {
+			workspace.revealLeaf(leaf);
+		}
+	}
+
   async activateChatView() {
     const { workspace } = this.app;
 
@@ -148,17 +175,18 @@ export default class NoteSecretary extends Plugin {
     const leaves = workspace.getLeavesOfType(VIEW_TYPE_CHAT);
 
     if (leaves.length > 0) {
-      // A leaf with our view already exists, use that
       leaf = leaves[0];
     } else {
-      // Our view could not be found in the workspace, create a new leaf
-      // in the right sidebar for it
-      // leaf = workspace.getLeaf(false);
 			leaf = workspace.getRightLeaf(false);
-      await leaf?.setViewState({ type: VIEW_TYPE_CHAT, active: true });
+			const defaultAssistantFile = this.app.vault.getFileByPath(this.settings.assistants.assistant)
+      await leaf?.setViewState(
+				{ type: VIEW_TYPE_CHAT,
+					active: true,
+					state: { assistantFile: defaultAssistantFile }
+				}
+			);
     }
 
-    // "Reveal" the leaf in case it is in a collapsed sidebar
     if (leaf) {
       workspace.revealLeaf(leaf);
     }
@@ -199,6 +227,46 @@ export default class NoteSecretary extends Plugin {
 
 	async saveSettings() {
 		await this.saveData(this.settings);
+	}
+}
+
+class SearchAssistantModal extends SuggestModal<TFile> {
+	app: App;
+	settings: NoteSecretarySettings;
+	plugin: NoteSecretary;
+	assistantFiles: TFile[];
+
+	constructor(app: App, settings: NoteSecretarySettings, plugin: NoteSecretary) {
+		super(app);
+		this.app = app;
+		this.settings = settings;
+		this.plugin = plugin;
+
+		const files = this.app.vault.getMarkdownFiles();
+		this.assistantFiles = files.filter((file: TFile) => {
+			return file.path.includes(this.settings.assistants.assistantDefinitionsPath);
+		})
+	}
+
+	async getSuggestions(query: string): Promise<TFile[]> {
+		const filteredAssistants = this.assistantFiles.filter((assistant) => {
+			return assistant.basename.toLowerCase().includes(query.toLowerCase());
+		});
+
+		return filteredAssistants;
+	}
+
+	renderSuggestion(assistantFile: TFile, el: HTMLElement) {
+		el.createEl('h4', { text: assistantFile.basename, cls: 'assistant-suggestion-header' });
+		el.createEl('h6', { text: assistantFile.path, cls: 'assistant-suggestion-path' });
+	}
+
+	onChooseSuggestion(assistantFile: TFile, evt: MouseEvent | KeyboardEvent) {
+		console.log(evt);
+		console.log(assistantFile);
+		// this.app.workspace.openLinkText(file_path, '');
+		// TODO: start new chat with selected assistant
+		this.plugin.startNewChat(assistantFile);
 	}
 }
 
