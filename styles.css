@@ -1,6 +1,9 @@
 .chat-header {
   padding: 2px;
   background-color: var(--background-secondary);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .chat-container {
@@ -166,4 +169,25 @@
 .chevron-icon {
   margin-left: 0.5rem;
 	--icon-size: 1.2rem;
+}
+
+.chat-history-container {
+  width: 100%;
+}
+
+.chat-history-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.chat-history-row-dark {
+  background-color: var(--background-secondary);
+}
+
+.chat-history-row-light {
+  background-color: var(--background-secondary-alt);
+}
+
+.chat-history-cell {
+  padding: 8px;
 }
