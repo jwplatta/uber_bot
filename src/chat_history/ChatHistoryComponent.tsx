@@ -1,4 +1,4 @@
-import { App, getFrontMatterInfo, TFile } from 'obsidian';
+import { App, getFrontMatterInfo } from 'obsidian';
 import { FC, useEffect, useState } from 'react';
 
 interface ChatHistoryComponentProps {
