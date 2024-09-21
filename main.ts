@@ -1,16 +1,16 @@
 import {
   App, WorkspaceLeaf,
   MarkdownView, Modal,
-  Notice, Plugin,
-	PluginSettingTab,
-  Setting, setIcon
+	Plugin,
+	PluginSettingTab
 } from 'obsidian';
-export const VIEW_TYPE_CHAT = "chat-view";
-import { ChatView } from "./ChatView";
+import { VIEW_TYPE_CHAT, ChatView } from "./ChatView";
+import { VIEW_TYPE_CHAT_HISTORY, ChatHistoryView } from "./src/chat_history/ChatHistoryView";
 import { assistantSettings } from './src/settings/AssistantSettings';
+import { chatHistorySettings } from './src/settings/ChatHistorySettings';
+import { openAISettings } from './src/settings/OpenAISettings';
 
-
-interface NoteSecretarySettings {
+export interface NoteSecretarySettings {
 	assistants: {
 		assistant: string;
 		assistantDefinitionsPath: string;
@@ -18,20 +18,28 @@ interface NoteSecretarySettings {
 	chatHistory: {
 		chatHistoryPath: string;
 	},
+	openAI: {
+		key: string;
+	}
 	toggleProfileSettings: boolean,
-	toggleChatHistorySettings: boolean
+	toggleChatHistorySettings: boolean,
+	toggleOpenAISettings: boolean
 }
 
 const DEFAULT_SETTINGS: NoteSecretarySettings = {
 	assistants: {
-		assistant: 'assistant.md',
+		assistant: 'NoteSecretary/Assistants/DefaultAssistant.md',
 		assistantDefinitionsPath: 'NoteSecretary/Assistants',
 	},
 	chatHistory: {
 		chatHistoryPath: 'NoteSecretary/ChatHistory',
 	},
+	openAI: {
+		key: ''
+	},
 	toggleProfileSettings: false,
 	toggleChatHistorySettings: false,
+	toggleOpenAISettings: false
 }
 
 export default class NoteSecretary extends Plugin {
@@ -42,22 +50,38 @@ export default class NoteSecretary extends Plugin {
 
     this.registerView(
       VIEW_TYPE_CHAT,
-      (leaf) => new ChatView(leaf, this.app)
+      (leaf) => {
+				const defaultAssistantFile = this.app.vault.getFileByPath(this.settings.assistants.assistant)
+				return new ChatView(leaf, this.app, this.settings, defaultAssistantFile)
+			}
     );
+
+		this.registerView(
+			VIEW_TYPE_CHAT_HISTORY,
+			(leaf) => new ChatHistoryView(leaf, this.app, this.settings.chatHistory.chatHistoryPath)
+		);
 
 		this.app.vault.on('modify', (file) => {
 			console.log('File modified: ', file.path);
 		})
 
 		const ribbonIconEl = this.addRibbonIcon('bot', 'NoteSecretary', (evt: MouseEvent) => {
-      this.activateView();
+      this.activateChatView();
 		});
 		// Perform additional things with the ribbon
 		ribbonIconEl.addClass('note-secretary-ribbon-class');
 
 		// This adds a status bar item to the bottom of the app. Does not work on mobile apps.
-		const statusBarItemEl = this.addStatusBarItem();
-		statusBarItemEl.setText('note-secretary Status');
+		// const statusBarItemEl = this.addStatusBarItem();
+		// statusBarItemEl.setText('note-secretary Status');
+
+		this.addCommand({
+			id: 'open-chat-history',
+			name: 'Chat History',
+			callback: () => {
+				this.activateChatHistoryView();
+			}
+		})
 
 		// This adds a simple command that can be triggered anywhere
 		this.addCommand({
@@ -66,15 +90,6 @@ export default class NoteSecretary extends Plugin {
 			callback: () => {
 				new ChatModal(this.app).open();
 			}
-		});
-
-		this.addCommand({
-			id: 'index-notes',
-			name: 'Index Notes',
-			// editorCallback: (editor: Editor, view: MarkdownView) => {
-			// 	console.log(editor.getSelection());
-			// 	editor.replaceSelection('Sample Editor Command');
-			// }
 		});
 
 		// This adds a complex command that can check whether the current state of the app allows execution of the command
@@ -109,7 +124,24 @@ export default class NoteSecretary extends Plugin {
 
 	onunload() {}
 
-  async activateView() {
+	async activateChatHistoryView() {
+		const { workspace } = this.app;
+
+		let leaf: WorkspaceLeaf | null = null;
+		const leaves = workspace.getLeavesOfType(VIEW_TYPE_CHAT_HISTORY);
+		if (leaves.length > 0 ) {
+			leaf = leaves[0];
+		} else {
+			leaf = workspace.getLeaf(false);
+			await leaf?.setViewState({ type: VIEW_TYPE_CHAT_HISTORY, active: true });
+		}
+
+		if(leaf) {
+			workspace.revealLeaf(leaf);
+		}
+	}
+
+  async activateChatView() {
     const { workspace } = this.app;
 
     let leaf: WorkspaceLeaf | null = null;
@@ -134,6 +166,35 @@ export default class NoteSecretary extends Plugin {
 
 	async loadSettings() {
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+
+		const assistantsDir = this.app.vault.getFolderByPath(
+			this.settings.assistants.assistantDefinitionsPath
+		)
+
+		if (!assistantsDir) {
+			this.app.vault.createFolder(
+				this.settings.assistants.assistantDefinitionsPath
+			)
+
+			const defaultAssistantPath = this.settings.assistants.assistantDefinitionsPath + "/DefaultAssistant.md";
+			const defaultAssistantFrontmatter = `---\nassistant: DefaultAssistant.md\npath: ${defaultAssistantPath}\n---`;
+			const defaultAssistant = `${defaultAssistantFrontmatter}\nYou are a helpful assistant.`
+			this.app.vault.create(
+				defaultAssistantPath,
+				defaultAssistant
+			).catch(() => {
+				console.log("Unable to create DefaultAssistant")
+			})
+		}
+
+		const chatHistoryDir = this.app.vault.getFolderByPath(
+			this.settings.chatHistory.chatHistoryPath
+		)
+		if (!chatHistoryDir) {
+			this.app.vault.createFolder(
+				this.settings.chatHistory.chatHistoryPath
+			)
+		}
 	}
 
 	async saveSettings() {
@@ -168,12 +229,16 @@ class NoteSecretarySettingTab extends PluginSettingTab {
 	display(): void {
 		const { containerEl } = this;
 		containerEl.empty();
-
-		// NOTE: Settings Header
 		containerEl.createEl('h1', { text: 'Note Secretary Settings' });
-		addHorizontalRule(containerEl);
 
+		addHorizontalRule(containerEl);
 		assistantSettings(containerEl, this.plugin, this);
+
+		addHorizontalRule(containerEl);
+		chatHistorySettings(containerEl, this.plugin, this);
+
+		addHorizontalRule(containerEl);
+		openAISettings(containerEl, this.plugin, this);
 	}
 }
 
