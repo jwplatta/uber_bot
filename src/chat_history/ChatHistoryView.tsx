@@ -5,16 +5,19 @@ import {
   ItemView,
   App
 } from 'obsidian';
+import { ChatHistoryComponent } from "./ChatHistoryComponent";
 
 export const VIEW_TYPE_CHAT_HISTORY = "chat-history-view";
 
 export class ChatHistoryView extends ItemView {
   root: Root | null = null;
   app: App;
+  chatHistoryPath: string;
 
-  constructor(leaf: WorkspaceLeaf, app: App) {
+  constructor(leaf: WorkspaceLeaf, app: App, chatHistoryPath: string) {
     super(leaf);
     this.app = app;
+    this.chatHistoryPath = chatHistoryPath;
   }
 
   getViewType() {
@@ -35,9 +38,7 @@ export class ChatHistoryView extends ItemView {
     this.root = createRoot(container);
     this.root.render(
       <StrictMode>
-        <div>
-          <h1>Chat History</h1>
-         </div>
+        <ChatHistoryComponent app={this.app} chatHistoryPath={this.chatHistoryPath} />
       </StrictMode>,
    );
   }
