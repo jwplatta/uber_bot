@@ -4,7 +4,7 @@ import { App, TFile } from 'obsidian';
 import OpenAI from 'openai';
 import ReactMarkdown from 'react-markdown';
 import { AssistantMessage } from './AssistantMessage';
-import { NoteSecretarySettings } from './main'
+import { NoteSecretarySettings } from '../../main'
 
 interface ChatComponentProps {
   app: App;
@@ -59,7 +59,7 @@ export const ChatComponent: FC<ChatComponentProps> = ({ app, settings, assistant
       }
     }
     const readAssistantFile = async () => {
-      console.log(assistantFile);
+      console.log("USING ASSISTANT: ", assistantFile);
 
       if (assistantFile) {
         const fileMetadata = app.metadataCache.getFileCache(assistantFile)
