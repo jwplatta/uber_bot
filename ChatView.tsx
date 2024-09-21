@@ -4,18 +4,24 @@ import { ChatComponent } from "./ChatComponent";
 import {
   WorkspaceLeaf,
   ItemView,
-  App
+  App,
+  TFile
 } from 'obsidian';
+import { NoteSecretarySettings } from './main'
 
-const VIEW_TYPE_CHAT = "chat-view";
+export const VIEW_TYPE_CHAT = "chat-view";
 
 export class ChatView extends ItemView {
   root: Root | null = null;
   app: App;
+  settings: NoteSecretarySettings;
+  assistantFile: TFile | null = null;
 
-  constructor(leaf: WorkspaceLeaf, app: App) {
+  constructor(leaf: WorkspaceLeaf, app: App, settings: NoteSecretarySettings, assistantFile: TFile | null) {
     super(leaf);
     this.app = app;
+    this.settings = settings;
+    this.assistantFile = assistantFile;
   }
 
   getViewType() {
@@ -27,18 +33,16 @@ export class ChatView extends ItemView {
   }
 
   getIcon(): string {
-    return "bot"; // You can replace this with any Obsidian built-in icon name
+    return "bot";
   }
 
   async onOpen() {
     const container = this.containerEl.children[1];
     container.empty();
-    // container.createEl("h1", { text: "Chat view" });
-    // container.createEl("textarea", { value: "foobar" });
     this.root = createRoot(container);
     this.root.render(
       <StrictMode>
-        <ChatComponent app={this.app} />
+        <ChatComponent app={this.app} settings={this.settings} assistantFile={this.assistantFile} />
       </StrictMode>,
    );
   }
