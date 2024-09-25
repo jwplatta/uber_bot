@@ -14,6 +14,7 @@ export const VIEW_TYPE_CHAT = "chat-view";
 
 interface ChatViewState {
   assistantFile: TFile | null;
+  noteContextFile: TFile | null;
 }
 
 export class ChatView extends ItemView implements ChatViewState {
@@ -21,17 +22,20 @@ export class ChatView extends ItemView implements ChatViewState {
   app: App;
   settings: NoteSecretarySettings;
   assistantFile: TFile | null = null;
+  noteContextFile: TFile | null = null;
 
   constructor(
     readonly leaf: WorkspaceLeaf,
     app: App,
     settings: NoteSecretarySettings,
-    assistantFile: TFile | null
+    assistantFile: TFile | null,
+    noteContextFile: TFile | null
   ) {
     super(leaf);
     this.app = app;
     this.settings = settings;
     this.assistantFile = assistantFile;
+    this.noteContextFile = noteContextFile;
   }
 
   setState(state: any, result: ViewStateResult): Promise<void> {
@@ -41,6 +45,10 @@ export class ChatView extends ItemView implements ChatViewState {
       this.assistantFile = state.assistantFile;
     }
 
+    if (state.noteContextFile) {
+      this.noteContextFile = state.noteContextFile;
+    }
+
     this.render();
 
     return super.setState(state, result);
@@ -48,7 +56,8 @@ export class ChatView extends ItemView implements ChatViewState {
 
   getState(): ChatViewState {
     return {
-      assistantFile: this.assistantFile
+      assistantFile: this.assistantFile,
+      noteContextFile: this.noteContextFile
     };
   }
 
@@ -70,7 +79,12 @@ export class ChatView extends ItemView implements ChatViewState {
     this.root = createRoot(container);
     this.root.render(
       <StrictMode>
-        <ChatComponent app={this.app} settings={this.settings} assistantFile={this.assistantFile} />
+        <ChatComponent
+          app={this.app}
+          settings={this.settings}
+          assistantFile={this.assistantFile}
+          noteContextFile={this.noteContextFile}
+          chatView={this} />
       </StrictMode>,
    );
   }

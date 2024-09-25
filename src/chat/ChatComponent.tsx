@@ -1,6 +1,6 @@
 import { FC, KeyboardEvent, useRef, useEffect, useState } from 'react';
 import { SquarePen, ArrowUp } from 'lucide-react';
-import { App, TFile } from 'obsidian';
+import { App, TFile, MarkdownRenderer, ItemView } from 'obsidian';
 import OpenAI from 'openai';
 import ReactMarkdown from 'react-markdown';
 import { AssistantMessage } from './AssistantMessage';
@@ -10,6 +10,8 @@ interface ChatComponentProps {
   app: App;
   settings: NoteSecretarySettings;
   assistantFile: TFile | null;
+  noteContextFile: TFile | null;
+  chatView: ItemView
 }
 
 interface Message {
@@ -17,7 +19,7 @@ interface Message {
   content: string;
 }
 
-export const ChatComponent: FC<ChatComponentProps> = ({ app, settings, assistantFile }) => {
+export const ChatComponent: FC<ChatComponentProps> = ({ app, settings, assistantFile, noteContextFile, chatView }) => {
   const [chatHistoryFile, setChatHistoryFile] = useState<TFile|null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -25,10 +27,14 @@ export const ChatComponent: FC<ChatComponentProps> = ({ app, settings, assistant
   const textareaRef = useRef(null as any);
   const [showInput, setShowInput] = useState(true);
   const [systemText, setSystemText] = useState("");
+  const [noteContext, setNoteContext] = useState("");
+  const [noteContextPath, setNoteContextPath] = useState("");
   const openai = new OpenAI({
     apiKey: settings.openAI.key,
     dangerouslyAllowBrowser: true
   });
+
+  // const containerRef = useRef<HTMLDivElement>(null);
 
   const startNewChatHistory = async () => {
     const historyFrontmatter = `---\nassistant: ${assistantFile?.path}\nkeywords: \ncreated: ${new Date().toLocaleString()}\n---\n`;
@@ -41,21 +47,24 @@ export const ChatComponent: FC<ChatComponentProps> = ({ app, settings, assistant
   }
 
   useEffect(() => {
+    // if (containerRef.current) {
+    //   // Clear any existing content in the container
+    //   containerRef.current.innerHTML = '';
+    //   const markdownContent = "```dataview\nlist from \"philosophy\" sort file.name asc\n```";
+
+    //   // Render markdown using Obsidian's MarkdownRenderer
+    //   MarkdownRenderer.render(
+    //     app,
+    //     markdownContent,
+    //     containerRef.current,
+    //     '/',
+    //     chatView
+    //   );
+    // }
+
     const startChatHistory = async () => {
       if (!chatHistoryFile) {
         await startNewChatHistory();
-        // const historyFrontmatter = `---\nassistant: ${assistantFile?.path}\ncreated: ${new Date().toLocaleString()}\n---\n`;
-        // const title = `${assistantFile?.basename}-${Date.now()}.md`;
-        // const chatHistFile = await app.vault.create(
-        //   settings.chatHistory.chatHistoryPath + "/" + title,
-        //   historyFrontmatter
-        // );
-
-        // console.log("chatHistoryFile: ", chatHistFile);
-        // setChatHistoryFile(chatHistFile);
-        // const chatHistoryText = await app.vault.read(chatHistoryFile);
-        // const chatHistory = chatHistoryText.split('\n');
-        // setChatHistoryPath(chatHistory);
       }
     }
     const readAssistantFile = async () => {
@@ -63,22 +72,29 @@ export const ChatComponent: FC<ChatComponentProps> = ({ app, settings, assistant
 
       if (assistantFile) {
         const fileMetadata = app.metadataCache.getFileCache(assistantFile)
-        console.log(fileMetadata?.frontmatter)
-
+        // console.log(fileMetadata?.frontmatter)
         const assistantFileText = await app.vault.read(assistantFile);
 
         if(fileMetadata && fileMetadata.frontmatterPosition?.end.line !== undefined) {
           const sysText = assistantFileText.split('\n').slice(
             fileMetadata.frontmatterPosition?.end.line + 1
           ).join('\n')
-
-          console.log("assistantFile TEXT:\n", sysText)
+          // console.log("assistantFile TEXT:\n", sysText)
           setSystemText(sysText)
         }
       }
     }
 
+    const readNoteContext = async () => {
+      if (noteContextFile) {
+        const context = await app.vault.read(noteContextFile);
+        setNoteContext(context);
+        setNoteContextPath(noteContextFile.path);
+      }
+    }
+
     readAssistantFile();
+    readNoteContext();
     startChatHistory();
 
     if (textareaRef.current) {
@@ -103,7 +119,7 @@ export const ChatComponent: FC<ChatComponentProps> = ({ app, settings, assistant
       let messagesContext: OpenAI.Chat.ChatCompletionMessageParam[] = [
         {
           role: "system",
-          content: systemText
+          content: noteContext === "" ? systemText : systemText + "\n###\nCONTEXT:\n" + noteContext
         }
       ]
       messagesContext = messagesContext.concat(messages as OpenAI.Chat.ChatCompletionMessageParam[]);
@@ -196,10 +212,11 @@ export const ChatComponent: FC<ChatComponentProps> = ({ app, settings, assistant
           {assistantFile?.basename || ""}
         </h1>
       </div>
+      {noteContextPath !== "" && <h6 className="">Loaded "{noteContextPath}" as context.</h6>}
       <div className="chat-messages">
         {messages.map((message, index) => (
           message.role === 'assistant' ? (
-            <AssistantMessage key={index} app={app} role={message.role} content={message.content} />
+            <AssistantMessage key={index} app={app} role={message.role} content={message.content} chatView={chatView} />
           ) : (
           <div key={index} className="chat-user-message">
             <ReactMarkdown>{message.content || ""}</ReactMarkdown>

@@ -54,7 +54,7 @@ export default class NoteSecretary extends Plugin {
       VIEW_TYPE_CHAT,
       (leaf) => {
 				// const defaultAssistantFile = this.app.vault.getFileByPath(this.settings.assistants.assistant)
-				return new ChatView(leaf, this.app, this.settings, null)
+				return new ChatView(leaf, this.app, this.settings, null, null)
 			}
     );
 
@@ -63,9 +63,9 @@ export default class NoteSecretary extends Plugin {
 			(leaf) => new ChatHistoryView(leaf, this.app, this.settings.chatHistory.chatHistoryPath)
 		);
 
-		this.app.vault.on('modify', (file) => {
-			console.log('File modified: ', file.path);
-		})
+		// this.app.vault.on('modify', (file) => {
+		// 	console.log('File modified: ', file.path);
+		// })
 
 		const ribbonIconEl = this.addRibbonIcon('bot', 'NoteSecretary', (evt: MouseEvent) => {
       this.activateChatView();
@@ -85,12 +85,19 @@ export default class NoteSecretary extends Plugin {
 			}
 		})
 
-		// This adds a simple command that can be triggered anywhere
 		this.addCommand({
 			id: 'select-assistant',
 			name: 'Select Assistant',
 			callback: () => {
 				new SearchAssistantModal(this.app, this.settings, this).open();
+			}
+		});
+
+		this.addCommand({
+			id: 'chat-with-note',
+			name: 'Chat with note',
+			callback: () => {
+				new SearchAssistantModal(this.app, this.settings, this, true).open();
 			}
 		});
 
@@ -143,7 +150,7 @@ export default class NoteSecretary extends Plugin {
 		}
 	}
 
-	async startNewChat(assistantFile: TFile) {
+	async startNewChat(assistantFile: TFile, noteContextFile: TFile | null = null) {
 		const { workspace } = this.app;
 
 		let leaf: WorkspaceLeaf | null = null;
@@ -159,7 +166,7 @@ export default class NoteSecretary extends Plugin {
 			{
 				type: VIEW_TYPE_CHAT,
 				active: true,
-				state: { assistantFile: assistantFile }
+				state: { assistantFile: assistantFile, noteContextFile: noteContextFile }
 			}
 		);
 
@@ -180,7 +187,8 @@ export default class NoteSecretary extends Plugin {
 			leaf = workspace.getRightLeaf(false);
 			const defaultAssistantFile = this.app.vault.getFileByPath(this.settings.assistants.assistant)
       await leaf?.setViewState(
-				{ type: VIEW_TYPE_CHAT,
+				{
+					type: VIEW_TYPE_CHAT,
 					active: true,
 					state: { assistantFile: defaultAssistantFile }
 				}
@@ -234,13 +242,15 @@ class SearchAssistantModal extends SuggestModal<TFile> {
 	app: App;
 	settings: NoteSecretarySettings;
 	plugin: NoteSecretary;
+	chatWithNote: boolean;
 	assistantFiles: TFile[];
 
-	constructor(app: App, settings: NoteSecretarySettings, plugin: NoteSecretary) {
+	constructor(app: App, settings: NoteSecretarySettings, plugin: NoteSecretary, chatWithNote = false) {
 		super(app);
 		this.app = app;
 		this.settings = settings;
 		this.plugin = plugin;
+		this.chatWithNote = chatWithNote;
 
 		const files = this.app.vault.getMarkdownFiles();
 		this.assistantFiles = files.filter((file: TFile) => {
@@ -262,11 +272,12 @@ class SearchAssistantModal extends SuggestModal<TFile> {
 	}
 
 	onChooseSuggestion(assistantFile: TFile, evt: MouseEvent | KeyboardEvent) {
-		console.log(evt);
-		console.log(assistantFile);
-		// this.app.workspace.openLinkText(file_path, '');
-		// TODO: start new chat with selected assistant
-		this.plugin.startNewChat(assistantFile);
+		if (this.chatWithNote) {
+			const activeFile = this.app.workspace.getActiveFile();
+			this.plugin.startNewChat(assistantFile, activeFile);
+		} else {
+			this.plugin.startNewChat(assistantFile, null);
+		}
 	}
 }
 
