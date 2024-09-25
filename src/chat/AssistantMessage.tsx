@@ -57,10 +57,10 @@ export const AssistantMessage: FC<AssistantMessageProps> = ({ app, role, content
       if (!activeFile) {
         path = title;
       } else {
-        path = (activeFile.path || "") + title;
+        path = (activeFile.path || "/") + title;
       }
     } else {
-      const dir = (app.vault as any).getConfig('newFileFolderPath')
+      const dir = (app.vault as any).getConfig('newFileFolderPath') + "/"
       path = dir + title;
     }
     await app.vault.create(path, content);
