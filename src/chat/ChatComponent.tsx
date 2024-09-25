@@ -90,6 +90,9 @@ export const ChatComponent: FC<ChatComponentProps> = ({ app, settings, assistant
         const context = await app.vault.read(noteContextFile);
         setNoteContext(context);
         setNoteContextPath(noteContextFile.path);
+      } else {
+        setNoteContext("");
+        setNoteContextPath("");
       }
     }
 
