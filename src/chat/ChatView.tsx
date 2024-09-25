@@ -39,14 +39,14 @@ export class ChatView extends ItemView implements ChatViewState {
   }
 
   setState(state: any, result: ViewStateResult): Promise<void> {
-    console.log("setState", state, result);
-
     if (state.assistantFile) {
       this.assistantFile = state.assistantFile;
     }
 
     if (state.noteContextFile) {
       this.noteContextFile = state.noteContextFile;
+    } else {
+      this.noteContextFile = null;
     }
 
     this.render();
