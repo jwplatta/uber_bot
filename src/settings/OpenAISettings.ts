@@ -42,4 +42,17 @@ export function openAISettings(containerEl: HTMLElement, plugin: NoteSecretary, 
           cb.inputEl.style.width = '100%';
         })
 		});
+
+  new Setting(settingsContainer)
+		.setName('Model')
+		.addDropdown((select) => {
+			select
+				.addOption('gpt-4o-mini', 'gpt-4o-mini')
+				.addOption('gpt-4o', 'gpt-4o')
+				.setValue(plugin.settings.openAI.model)
+				.onChange(async (value: string) => {
+					plugin.settings.openAI.model = value;
+					await plugin.saveSettings();
+				});
+		});
 }
