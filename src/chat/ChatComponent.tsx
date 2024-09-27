@@ -2,8 +2,8 @@ import { FC, KeyboardEvent, useRef, useEffect, useState } from 'react';
 import { SquarePen, ArrowUp } from 'lucide-react';
 import { App, TFile, MarkdownRenderer, ItemView } from 'obsidian';
 import OpenAI from 'openai';
-import ReactMarkdown from 'react-markdown';
 import { AssistantMessage } from './AssistantMessage';
+import { UserMessage } from './UserMessage';
 import { NoteSecretarySettings } from '../../main'
 
 interface ChatComponentProps {
@@ -67,6 +67,7 @@ export const ChatComponent: FC<ChatComponentProps> = ({ app, settings, assistant
         await startNewChatHistory();
       }
     }
+
     const readAssistantFile = async () => {
       console.log("USING ASSISTANT: ", assistantFile);
 
@@ -109,7 +110,6 @@ export const ChatComponent: FC<ChatComponentProps> = ({ app, settings, assistant
   }, [messages, input]);
 
   const scrollToBottom = () => {
-    console.log(messages);
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
@@ -131,6 +131,7 @@ export const ChatComponent: FC<ChatComponentProps> = ({ app, settings, assistant
         role: 'user',
         content: input,
       };
+
       if (chatHistoryFile) {
         app.vault.append(chatHistoryFile, `${newMessage.role}: ${newMessage.content}\n***\n`);
       }
@@ -139,7 +140,7 @@ export const ChatComponent: FC<ChatComponentProps> = ({ app, settings, assistant
 
       const params: OpenAI.Chat.ChatCompletionCreateParams = {
         messages: messagesContext,
-        model: "gpt-4o-mini", //TODO: move to settings
+        model: settings.openAI.model,
         stream: true
       };
 
@@ -199,15 +200,36 @@ export const ChatComponent: FC<ChatComponentProps> = ({ app, settings, assistant
     }
   };
 
+  const renameChatHistoryFile = async () => {
+    if (!chatHistoryFile || !chatHistoryFile.parent) {
+      return;
+    }
+
+    const chatHistoryFilePath = chatHistoryFile.parent.path || "";
+    const chatText = await app.vault.read(chatHistoryFile);
+
+    const prompt = `Write the topic of the TEXT in 3-5 words with no special characters.\n###\nTEXT:\n${chatText}`
+    const titleCompletion = await openai.chat.completions.create({
+      messages: [{ role: 'user', content: prompt }],
+      model: settings.openAI.model
+    });
+
+    await app.vault.copy(
+      chatHistoryFile,
+      chatHistoryFilePath + "/" + titleCompletion.choices[0].message.content + ".md"
+    );
+    await app.vault.delete(chatHistoryFile);
+  }
+
   const handleNewChatButtonClick = async () => {
+    await renameChatHistoryFile();
     await startNewChatHistory();
     setMessages([]);
-    console.log("New chat button clicked");
   }
 
   return (
     <div className="chat-container">
-      <div className="chat-header flex justify-between items-center">
+      <div className="chat-header flex">
         <div className="new-chat-button tool-tip" onClick={handleNewChatButtonClick} data-tooltip="Start a new chat">
           <SquarePen size={24} />
         </div>
@@ -221,9 +243,7 @@ export const ChatComponent: FC<ChatComponentProps> = ({ app, settings, assistant
           message.role === 'assistant' ? (
             <AssistantMessage key={index} app={app} role={message.role} content={message.content} chatView={chatView} />
           ) : (
-          <div key={index} className="chat-user-message">
-            <ReactMarkdown>{message.content || ""}</ReactMarkdown>
-          </div>
+            <UserMessage key={index} content={message.content} />
         )))}
         <div ref={messagesEndRef} />
       </div>
