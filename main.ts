@@ -22,6 +22,8 @@ export interface NoteSecretarySettings {
 	},
 	openAI: {
 		key: string;
+		model: string;
+		stream: boolean;
 	}
 	toggleProfileSettings: boolean,
 	toggleChatHistorySettings: boolean,
@@ -37,7 +39,9 @@ const DEFAULT_SETTINGS: NoteSecretarySettings = {
 		chatHistoryPath: 'NoteSecretary/ChatHistory',
 	},
 	openAI: {
-		key: ''
+		key: '',
+		model: 'gpt-4o-mini',
+		stream: true
 	},
 	toggleProfileSettings: false,
 	toggleChatHistorySettings: false,
@@ -166,7 +170,10 @@ export default class NoteSecretary extends Plugin {
 			{
 				type: VIEW_TYPE_CHAT,
 				active: true,
-				state: { assistantFile: assistantFile, noteContextFile: noteContextFile }
+				state: {
+					assistantFile: assistantFile,
+					noteContextFile: noteContextFile
+				}
 			}
 		);
 
@@ -202,6 +209,9 @@ export default class NoteSecretary extends Plugin {
 
 	async loadSettings() {
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+
+		console.log('DEFAULT_SETTINGS: ', DEFAULT_SETTINGS);
+		console.log('Loaded settings: ', this.settings);
 
 		const assistantsDir = this.app.vault.getFolderByPath(
 			this.settings.assistants.assistantDefinitionsPath
