@@ -1,7 +1,7 @@
 import { FC, useRef, useEffect } from 'react';
-import ReactMarkdown from 'react-markdown';
+// import ReactMarkdown from 'react-markdown';
 import { Copy, FilePlus } from 'lucide-react';
-import { App, ItemView, MarkdownRenderer, htmlToMarkdown } from 'obsidian';
+import { App, ItemView, MarkdownRenderer } from 'obsidian';
 
 interface AssistantMessageProps {
   app: App;
@@ -16,9 +16,6 @@ export const AssistantMessage: FC<AssistantMessageProps> = ({ app, role, content
   useEffect(() => {
     if (messageContainerRef.current) {
       messageContainerRef.current.innerHTML = '';
-
-      console.log("Rendering Assistant message:\n", content);
-
       MarkdownRenderer.render(
         app,
         content,
