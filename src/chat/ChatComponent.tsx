@@ -208,11 +208,20 @@ export const ChatComponent: FC<ChatComponentProps> = ({ app, settings, assistant
     const chatHistoryFilePath = chatHistoryFile.parent.path || "";
     const chatText = await app.vault.read(chatHistoryFile);
 
-    const prompt = `Write the topic of the TEXT in 3-5 words with no special characters.\n###\nTEXT:\n${chatText}`
+    const titlePrompt = `Write the topic of the TEXT in 3-5 words with no special characters.\n###\nTEXT:\n${chatText}`;
     const titleCompletion = await openai.chat.completions.create({
-      messages: [{ role: 'user', content: prompt }],
+      messages: [{ role: 'user', content: titlePrompt }],
       model: settings.openAI.model
     });
+
+    const keywordsPrompt = `Write 1 to 3 keywords or expressions that describe the TEXT. Each keyword should start with a hashtag and contain no spaces. The keywords should be comma separated. For example, "#philosophy, #free-will". \n###\nTEXT:\n${chatText}`;
+    keywordsCompletion = await openai.chat.completions.create({
+      messages: [{ role: 'user', content: keywordsPrompt }],
+      model: settings.openAI.model
+    });
+
+    // const fileCache = app.metadataCache.getFileCache(file);
+    // const frontmatter = fileCache?.frontmatter;
 
     await app.vault.copy(
       chatHistoryFile,
