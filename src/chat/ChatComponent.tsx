@@ -1,10 +1,14 @@
 import { FC, KeyboardEvent, useRef, useEffect, useState } from 'react';
 import { SquarePen, ArrowUp } from 'lucide-react';
-import { App, TFile, MarkdownRenderer, ItemView } from 'obsidian';
+import {
+  App, TFile,
+  // MarkdownRenderer,
+  ItemView } from 'obsidian';
 import OpenAI from 'openai';
 import { AssistantMessage } from './AssistantMessage';
 import { UserMessage } from './UserMessage';
 import { NoteSecretarySettings } from '../../main'
+import { createChatHistoryFile, renameChatHistoryFile } from './util';
 
 interface ChatComponentProps {
   app: App;
@@ -36,14 +40,15 @@ export const ChatComponent: FC<ChatComponentProps> = ({ app, settings, assistant
 
   // const containerRef = useRef<HTMLDivElement>(null);
 
-  const startNewChatHistory = async () => {
-    const historyFrontmatter = `---\nassistant: ${assistantFile?.path}\nkeywords: \ncreated: ${new Date().toLocaleString()}\n---\n`;
-    const title = `${assistantFile?.basename}-${Date.now()}.md`;
-    const chatHistFile = await app.vault.create(
-      settings.chatHistory.chatHistoryPath + "/" + title,
-      historyFrontmatter
-    );
-    setChatHistoryFile(chatHistFile);
+  const startChatHistory = async () => {
+    if (!chatHistoryFile) {
+      const chatHistFile = await createChatHistoryFile(
+        assistantFile as TFile,
+        app,
+        settings
+      );
+      setChatHistoryFile(chatHistFile);
+    }
   }
 
   useEffect(() => {
@@ -62,20 +67,12 @@ export const ChatComponent: FC<ChatComponentProps> = ({ app, settings, assistant
     //   );
     // }
 
-    const startChatHistory = async () => {
-      if (!chatHistoryFile) {
-        await startNewChatHistory();
-      }
-    }
-
     const readAssistantFile = async () => {
       console.log("USING ASSISTANT: ", assistantFile);
 
       if (assistantFile) {
         const fileMetadata = app.metadataCache.getFileCache(assistantFile)
-        // console.log(fileMetadata?.frontmatter)
         const assistantFileText = await app.vault.read(assistantFile);
-
         if(fileMetadata && fileMetadata.frontmatterPosition?.end.line !== undefined) {
           const sysText = assistantFileText.split('\n').slice(
             fileMetadata.frontmatterPosition?.end.line + 1
@@ -200,39 +197,16 @@ export const ChatComponent: FC<ChatComponentProps> = ({ app, settings, assistant
     }
   };
 
-  const renameChatHistoryFile = async () => {
-    if (!chatHistoryFile || !chatHistoryFile.parent) {
-      return;
-    }
-
-    const chatHistoryFilePath = chatHistoryFile.parent.path || "";
-    const chatText = await app.vault.read(chatHistoryFile);
-
-    const titlePrompt = `Write the topic of the TEXT in 3-5 words with no special characters.\n###\nTEXT:\n${chatText}`;
-    const titleCompletion = await openai.chat.completions.create({
-      messages: [{ role: 'user', content: titlePrompt }],
-      model: settings.openAI.model
-    });
-
-    const keywordsPrompt = `Write 1 to 3 keywords or expressions that describe the TEXT. Each keyword should start with a hashtag and contain no spaces. The keywords should be comma separated. For example, "#philosophy, #free-will". \n###\nTEXT:\n${chatText}`;
-    keywordsCompletion = await openai.chat.completions.create({
-      messages: [{ role: 'user', content: keywordsPrompt }],
-      model: settings.openAI.model
-    });
-
-    // const fileCache = app.metadataCache.getFileCache(file);
-    // const frontmatter = fileCache?.frontmatter;
-
-    await app.vault.copy(
-      chatHistoryFile,
-      chatHistoryFilePath + "/" + titleCompletion.choices[0].message.content + ".md"
-    );
-    await app.vault.delete(chatHistoryFile);
-  }
-
   const handleNewChatButtonClick = async () => {
-    await renameChatHistoryFile();
-    await startNewChatHistory();
+    if (chatHistoryFile) {
+      await renameChatHistoryFile(chatHistoryFile, app, settings);
+    }
+    const newChatHistoryFile = await createChatHistoryFile(
+      assistantFile as TFile,
+      app,
+      settings
+    );
+    setChatHistoryFile(newChatHistoryFile);
     setMessages([]);
   }
 
