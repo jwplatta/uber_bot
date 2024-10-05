@@ -4,7 +4,8 @@ import {
 	Plugin,
 	PluginSettingTab,
 	SuggestModal,
-	TFile
+	TFile,
+	FuzzySuggestModal
 } from 'obsidian';
 import { VIEW_TYPE_CHAT, ChatView } from "./src/chat/ChatView";
 import { VIEW_TYPE_CHAT_HISTORY, ChatHistoryView } from "./src/chat_history/ChatHistoryView";
@@ -104,6 +105,14 @@ export default class NoteSecretary extends Plugin {
 				new SearchAssistantModal(this.app, this.settings, this, true).open();
 			}
 		});
+
+		this.addCommand({
+			id: 'search-chat-history',
+			name: 'Search Chat History',
+			callback: async () => {
+				new SearchChatHistory(this.app, this.settings).open();
+			}
+		})
 
 		// This adds a complex command that can check whether the current state of the app allows execution of the command
 		this.addCommand({
@@ -246,6 +255,47 @@ export default class NoteSecretary extends Plugin {
 	async saveSettings() {
 		await this.saveData(this.settings);
 	}
+}
+
+interface Chat {
+	file: TFile;
+	content: string;
+}
+
+class SearchChatHistory extends FuzzySuggestModal<Chat> {
+	app: App;
+	settings: NoteSecretarySettings;
+	chats: Chat[];
+
+	constructor(app: App, settings: NoteSecretarySettings) {
+		super(app);
+		this.app = app;
+		this.settings = settings;
+		const files = this.app.vault.getMarkdownFiles().filter((file: TFile) => {
+			return file.path.includes(this.settings.chatHistory.chatHistoryPath);
+		});
+
+		this.chats = files.map((file: TFile) => {
+			const fc = app.metadataCache.getFileCache(file);
+			const tags = fc?.frontmatter?.tags || "";
+			return {
+				file: file,
+				content: file.basename + ": " + tags
+			};
+		});
+	}
+
+  getItems(): Chat[] {
+		return this.chats;
+  }
+
+  getItemText(chat: Chat): string {
+		return chat.content;
+  }
+
+  async onChooseItem(chat: Chat, evt: MouseEvent | KeyboardEvent) {
+    await this.app.workspace.getLeaf().openFile(chat.file);
+  }
 }
 
 class SearchAssistantModal extends SuggestModal<TFile> {
