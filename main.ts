@@ -7,11 +7,11 @@ import {
 	TFile,
 	FuzzySuggestModal
 } from 'obsidian';
-import { VIEW_TYPE_CHAT, ChatView } from "./src/chat/ChatView";
-import { VIEW_TYPE_CHAT_HISTORY, ChatHistoryView } from "./src/chat_history/ChatHistoryView";
-import { assistantSettings } from './src/settings/AssistantSettings';
-import { chatHistorySettings } from './src/settings/ChatHistorySettings';
-import { openAISettings } from './src/settings/OpenAISettings';
+import { VIEW_TYPE_CHAT, ChatView } from "@/src/chat/ChatView";
+import { VIEW_TYPE_CHAT_HISTORY, ChatHistoryView } from "@/src/chat_history/ChatHistoryView";
+import { assistantSettings } from '@/src/settings/AssistantSettings';
+import { chatHistorySettings } from '@/src/settings/ChatHistorySettings';
+import { openAISettings } from '@/src/settings/OpenAISettings';
 
 export interface NoteSecretarySettings {
 	assistants: {

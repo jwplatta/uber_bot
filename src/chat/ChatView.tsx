@@ -1,6 +1,6 @@
 import { Root, createRoot } from "react-dom/client";
 import { StrictMode } from "react";
-import { ChatComponent } from "./ChatComponent";
+import { ChatComponent } from "@/src/chat/ChatComponent";
 import {
   WorkspaceLeaf,
   ItemView,
@@ -8,7 +8,7 @@ import {
   TFile,
   ViewStateResult
 } from 'obsidian';
-import { NoteSecretarySettings } from '../../main'
+import { NoteSecretarySettings } from '@/main'
 
 export const VIEW_TYPE_CHAT = "chat-view";
 

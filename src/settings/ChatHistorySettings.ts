@@ -1,7 +1,7 @@
 import {
   Setting, setIcon, SettingTab
 } from 'obsidian';
-import NoteSecretary from '../../main';
+import NoteSecretary from '@/main';
 
 export function chatHistorySettings(containerEl: HTMLElement, plugin: NoteSecretary, settingTab: SettingTab) {
   const toggleSettingContainer = containerEl.createDiv({ cls: 'toggle-setting' });

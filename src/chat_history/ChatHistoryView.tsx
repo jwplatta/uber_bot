@@ -5,7 +5,7 @@ import {
   ItemView,
   App
 } from 'obsidian';
-import { ChatHistoryComponent } from "./ChatHistoryComponent";
+import { ChatHistoryComponent } from "@/src/chat_history/ChatHistoryComponent";
 
 export const VIEW_TYPE_CHAT_HISTORY = "chat-history-view";
 

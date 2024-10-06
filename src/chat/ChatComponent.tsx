@@ -5,10 +5,10 @@ import {
   // MarkdownRenderer,
   ItemView } from 'obsidian';
 import OpenAI from 'openai';
-import { AssistantMessage } from './AssistantMessage';
-import { UserMessage } from './UserMessage';
-import { NoteSecretarySettings } from '../../main'
-import { createChatHistoryFile, renameChatHistoryFile } from './util';
+import { AssistantMessage } from '@/src/chat/AssistantMessage';
+import { UserMessage } from '@/src/chat/UserMessage';
+import { NoteSecretarySettings } from '@/main'
+import { createChatHistoryFile, renameChatHistoryFile } from '@/src/chat/util';
 
 interface ChatComponentProps {
   app: App;
