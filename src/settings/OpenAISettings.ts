@@ -55,4 +55,16 @@ export function openAISettings(containerEl: HTMLElement, plugin: NoteSecretary, 
 					await plugin.saveSettings();
 				});
 		});
+
+  new Setting(settingsContainer)
+	.setName('Stream')
+	.setDesc('Enable streaming completions')
+	.addToggle((toggle) => {
+		toggle
+			.setValue(plugin.settings.openAI.stream)
+			.onChange(async (value) => {
+				plugin.settings.openAI.stream = value;
+				await plugin.saveSettings();
+			});
+	});
 }
