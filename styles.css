@@ -1,9 +1,13 @@
 .chat-header {
-  padding: 2px;
+  padding: 1px;
   background-color: var(--background-secondary);
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.model-name {
+  color: var(--text-accent);
 }
 
 .chat-container {
@@ -140,8 +144,8 @@
 .tool-tip::after {
   content: attr(data-tooltip);
   position: absolute;
-  left: 120%;
-  bottom: -80%;
+  left: -40%;
+  bottom: -60%;
   transform: translateX(-50%);
   background-color: var(--background-secondary-alt);
   color: var(--text-normal);
