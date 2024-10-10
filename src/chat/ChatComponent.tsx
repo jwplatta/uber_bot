@@ -4,11 +4,12 @@ import {
   App, TFile,
   // MarkdownRenderer,
   ItemView } from 'obsidian';
-import OpenAI from 'openai';
 import { AssistantMessage } from '@/src/chat/AssistantMessage';
 import { UserMessage } from '@/src/chat/UserMessage';
 import { NoteSecretarySettings } from '@/main'
 import { createChatHistoryFile, renameChatHistoryFile } from '@/src/chat/util';
+import { buildAssistant } from '@/src/assistants/buildAssistant';
+import { Assistant } from '@/src/assistants/types';
 
 interface ChatComponentProps {
   app: App;
@@ -30,13 +31,9 @@ export const ChatComponent: FC<ChatComponentProps> = ({ app, settings, assistant
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const textareaRef = useRef(null as any);
   const [showInput, setShowInput] = useState(true);
-  const [systemText, setSystemText] = useState("");
   const [noteContext, setNoteContext] = useState("");
   const [noteContextPath, setNoteContextPath] = useState("");
-  const openai = new OpenAI({
-    apiKey: settings.openAI.key,
-    dangerouslyAllowBrowser: true
-  });
+  const [assistant, setAssistant] = useState<Assistant | null>(null);
 
   // const containerRef = useRef<HTMLDivElement>(null);
 
@@ -48,6 +45,15 @@ export const ChatComponent: FC<ChatComponentProps> = ({ app, settings, assistant
         settings
       );
       setChatHistoryFile(chatHistFile);
+    }
+  }
+
+  const loadAssistant = async () => {
+    if(!assistant) {
+      const asst = await buildAssistant(app, assistantFile as TFile, settings);
+      console.log("LOADED ASSISTANT: ", asst);
+
+      setAssistant(asst);
     }
   }
 
@@ -67,22 +73,6 @@ export const ChatComponent: FC<ChatComponentProps> = ({ app, settings, assistant
     //   );
     // }
 
-    const readAssistantFile = async () => {
-      console.log("USING ASSISTANT: ", assistantFile);
-
-      if (assistantFile) {
-        const fileMetadata = app.metadataCache.getFileCache(assistantFile)
-        const assistantFileText = await app.vault.read(assistantFile);
-        if(fileMetadata && fileMetadata.frontmatterPosition?.end.line !== undefined) {
-          const sysText = assistantFileText.split('\n').slice(
-            fileMetadata.frontmatterPosition?.end.line + 1
-          ).join('\n')
-          // console.log("assistantFile TEXT:\n", sysText)
-          setSystemText(sysText)
-        }
-      }
-    }
-
     const readNoteContext = async () => {
       if (noteContextFile) {
         const context = await app.vault.read(noteContextFile);
@@ -94,13 +84,17 @@ export const ChatComponent: FC<ChatComponentProps> = ({ app, settings, assistant
       }
     }
 
-    readAssistantFile();
+    loadAssistant();
     readNoteContext();
     startChatHistory();
 
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto'; // Reset the height first
       textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px'; // Adjust to content
+    }
+
+    if(showInput) {
+      textareaRef.current.focus();
     }
 
     scrollToBottom();
@@ -115,46 +109,39 @@ export const ChatComponent: FC<ChatComponentProps> = ({ app, settings, assistant
   const handleSendMessage = async () => {
     setShowInput(false);
 
-    if (input.trim()) {
-      let messagesContext: OpenAI.Chat.ChatCompletionMessageParam[] = [
-        {
-          role: "system",
-          content: noteContext === "" ? systemText : systemText + "\n###\nCONTEXT:\n" + noteContext
-        }
-      ]
-      messagesContext = messagesContext.concat(messages as OpenAI.Chat.ChatCompletionMessageParam[]);
+    if (!assistant) {
+      return;
+    }
 
-      const newMessage: OpenAI.Chat.ChatCompletionMessageParam = {
+    if (input.trim()) {
+
+      const newMessage: Message = {
         role: 'user',
-        content: input,
+        content: input
       };
 
       if (chatHistoryFile) {
-        app.vault.append(chatHistoryFile, `${newMessage.role}: ${newMessage.content}\n***\n`);
+        app.vault.append(chatHistoryFile, `user: ${input}\n***\n`);
       }
-
-      messagesContext.push(newMessage);
-
-      const params: OpenAI.Chat.ChatCompletionCreateParams = {
-        messages: messagesContext,
-        model: settings.openAI.model,
-        stream: true
-      };
 
       setMessages([...messages, newMessage as Message]);
 
-      try {
-        const completion = await openai.chat.completions.create(params);
-        const assistantMessage: Message = {
-          role: 'assistant',
-          content: '',
-        };
+      const params = {
+        newMessage: newMessage,
+        messages: messages,
+        noteContext: noteContext
+      }
 
-        for await (const chunk of completion) {
-          const contentChunk = chunk.choices[0].delta?.content || '';
-          assistantMessage.content += contentChunk;
+      const assistantMessage: Message = {
+        role: 'assistant',
+        content: '',
+      };
 
-          setMessages(prevMessages => {
+      if (assistant.stream) {
+        for await (const { content } of assistant.streamResponse(params)) {
+          assistantMessage.content += content;
+
+          setMessages((prevMessages: Message[]) => {
             const updatedMessages = [...prevMessages];
 
             if (updatedMessages.length > 0 && updatedMessages[updatedMessages.length - 1].role === 'assistant') {
@@ -167,11 +154,26 @@ export const ChatComponent: FC<ChatComponentProps> = ({ app, settings, assistant
 
           scrollToBottom();
         }
-        if (chatHistoryFile) {
-          app.vault.append(chatHistoryFile, `${assistantMessage.role}: ${assistantMessage.content}\n***\n`);
-        }
-      } catch (error) {
-        console.error('Error streaming response:', error);
+      } else {
+        const { content } = await assistant.response(params);
+        assistantMessage.content = content;
+
+        setMessages((prevMessages: Message[]) => {
+          const updatedMessages = [...prevMessages];
+
+          if (updatedMessages.length > 0 && updatedMessages[updatedMessages.length - 1].role === 'assistant') {
+            updatedMessages[updatedMessages.length - 1] = assistantMessage;
+          } else {
+            updatedMessages.push(assistantMessage);
+          }
+          return updatedMessages;
+        });
+
+        scrollToBottom();
+      }
+
+      if (chatHistoryFile) {
+        app.vault.append(chatHistoryFile, `assistant: ${assistantMessage.content}\n***\n`);
       }
 
       setInput('');
@@ -213,12 +215,15 @@ export const ChatComponent: FC<ChatComponentProps> = ({ app, settings, assistant
   return (
     <div className="chat-container">
       <div className="chat-header flex">
+        <div>
+          <h1>
+            {assistantFile?.basename || ""}
+          </h1>
+          <p className="model-name">Model: {assistant?.model || ""}</p>
+        </div>
         <div className="new-chat-button tool-tip" onClick={handleNewChatButtonClick} data-tooltip="Start a new chat">
           <SquarePen size={24} />
         </div>
-        <h1>
-          {assistantFile?.basename || ""}
-        </h1>
       </div>
       {noteContextPath !== "" && <h6 className="">Loaded "{noteContextPath}" as context.</h6>}
       <div className="chat-messages">
