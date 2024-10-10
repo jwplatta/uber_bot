@@ -12,6 +12,7 @@ import { VIEW_TYPE_CHAT_HISTORY, ChatHistoryView } from "@/src/chat_history/Chat
 import { assistantSettings } from '@/src/settings/AssistantSettings';
 import { chatHistorySettings } from '@/src/settings/ChatHistorySettings';
 import { openAISettings } from '@/src/settings/OpenAISettings';
+import { ollamaSettings } from '@/src/settings/OllamaSettings';
 
 export interface NoteSecretarySettings {
 	assistants: {
@@ -25,10 +26,17 @@ export interface NoteSecretarySettings {
 		key: string;
 		model: string;
 		stream: boolean;
-	}
+	},
+	ollama: {
+		host: string;
+		model: string;
+		models: string[];
+		stream: boolean;
+	},
 	toggleProfileSettings: boolean,
 	toggleChatHistorySettings: boolean,
-	toggleOpenAISettings: boolean
+	toggleOpenAISettings: boolean,
+	toggleOllamaSettings: boolean
 }
 
 const DEFAULT_SETTINGS: NoteSecretarySettings = {
@@ -44,9 +52,16 @@ const DEFAULT_SETTINGS: NoteSecretarySettings = {
 		model: 'gpt-4o-mini',
 		stream: true
 	},
+	ollama: {
+		host: 'http://localhost:11434',
+		model: 'llama3.2:latest',
+		models: [],
+		stream: true
+	},
 	toggleProfileSettings: false,
 	toggleChatHistorySettings: false,
-	toggleOpenAISettings: false
+	toggleOpenAISettings: false,
+	toggleOllamaSettings: false
 }
 
 export default class NoteSecretary extends Plugin {
@@ -378,6 +393,9 @@ class NoteSecretarySettingTab extends PluginSettingTab {
 
 		addHorizontalRule(containerEl);
 		openAISettings(containerEl, this.plugin, this);
+
+		addHorizontalRule(containerEl);
+		ollamaSettings(containerEl, this.plugin, this);
 	}
 }
 
