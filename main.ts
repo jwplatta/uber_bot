@@ -13,6 +13,7 @@ import { assistantSettings } from '@/src/settings/AssistantSettings';
 import { chatHistorySettings } from '@/src/settings/ChatHistorySettings';
 import { openAISettings } from '@/src/settings/OpenAISettings';
 import { ollamaSettings } from '@/src/settings/OllamaSettings';
+import { OpenAIModels, OllamaModels } from '@/src/settings/llmModels';
 
 export interface NoteSecretarySettings {
 	assistants: {
@@ -112,6 +113,14 @@ export default class NoteSecretary extends Plugin {
 				new SearchAssistantModal(this.app, this.settings, this).open();
 			}
 		});
+
+		this.addCommand({
+			id: 'create-assistant',
+			name: 'Create Assistant',
+			callback: () => {
+				new CreateAssistantModal(this.app, this.settings).open();
+			}
+		})
 
 		this.addCommand({
 			id: 'chat-with-note',
@@ -353,6 +362,50 @@ class SearchAssistantModal extends SuggestModal<TFile> {
 		} else {
 			this.plugin.startNewChat(assistantFile, null);
 		}
+	}
+}
+
+class CreateAssistantModal extends Modal {
+	constructor(app: App, settings: NoteSecretarySettings) {
+		super(app);
+		this.setTitle('Create Assistant');
+
+		this.contentEl.createEl('p', { text: 'Assistant Name' });
+		const nameInput = this.contentEl.createEl('input', { cls: 'system-prompt-textarea' });
+
+		this.contentEl.createEl('p', { text: 'Model' });
+		const modelDropdown = this.contentEl.createEl('select', { cls: 'model-dropdown' });
+
+    const models = OpenAIModels.concat(OllamaModels);
+    models.forEach((model: string) => {
+      const option = modelDropdown.createEl('option', { text: model });
+      option.value = model;
+    });
+
+		this.contentEl.createEl('p', { text: 'System Prompt' });
+		const systemPromptTextarea = this.contentEl.createEl('textarea', { cls: 'system-prompt-textarea' });
+
+		const saveButton = this.contentEl.createEl('button', { text: 'Save', cls: 'save-button', attr: { type: 'button' } });
+
+    saveButton.addEventListener('click', () => {
+      const assistantName = nameInput.value;
+      const selectedModel = modelDropdown.value;
+      const systemPrompt = systemPromptTextarea.value;
+
+			this.app.vault.create(
+				`${settings.assistants.assistantDefinitionsPath}/${assistantName}.md`,
+				`---\nassistant: ${assistantName}.md\nmodel: ${selectedModel}\n---\n${systemPrompt}`
+			).catch(() => {
+				console.log("Unable to create assistant")
+			});
+
+      this.close();
+    });
+	}
+
+	onClose() {
+		const {contentEl} = this;
+		contentEl.empty();
 	}
 }
 
