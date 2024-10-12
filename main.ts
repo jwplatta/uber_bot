@@ -1,6 +1,6 @@
 import {
   App, WorkspaceLeaf,
-  MarkdownView, Modal,
+  MarkdownView,
 	Plugin,
 	PluginSettingTab,
 	SuggestModal,
@@ -13,7 +13,8 @@ import { assistantSettings } from '@/src/settings/AssistantSettings';
 import { chatHistorySettings } from '@/src/settings/ChatHistorySettings';
 import { openAISettings } from '@/src/settings/OpenAISettings';
 import { ollamaSettings } from '@/src/settings/OllamaSettings';
-import { OpenAIModels, OllamaModels } from '@/src/settings/llmModels';
+import AssistantFormModal from '@/src/AssistantFormModal';
+
 
 export interface NoteSecretarySettings {
 	assistants: {
@@ -118,7 +119,15 @@ export default class NoteSecretary extends Plugin {
 			id: 'create-assistant',
 			name: 'Create Assistant',
 			callback: () => {
-				new CreateAssistantModal(this.app, this.settings).open();
+				new AssistantFormModal(this.app, this.settings, null).open()
+			}
+		})
+
+		this.addCommand({
+			id: 'edit-assistant',
+			name: 'Edit Assistant',
+			callback: () => {
+				new SelectEditAssistanModal(this.app, this.settings).open();
 			}
 		})
 
@@ -149,7 +158,7 @@ export default class NoteSecretary extends Plugin {
 					// If checking is true, we're simply "checking" if the command can be run.
 					// If checking is false, then we want to actually perform the operation.
 					if (!checking) {
-						new ChatModal(this.app).open();
+						// new ChatModal(this.app).open();
 					}
 
 					// This command will only show up in Command Palette when the check function returns true
@@ -322,6 +331,40 @@ class SearchChatHistory extends FuzzySuggestModal<Chat> {
   }
 }
 
+class SelectEditAssistanModal extends SuggestModal<TFile> {
+	app: App;
+	settings: NoteSecretarySettings;
+	assistantFiles: TFile[];
+
+	constructor(app: App, settings: NoteSecretarySettings) {
+		super(app);
+		this.app = app;
+		this.settings = settings;
+
+		const files = this.app.vault.getMarkdownFiles();
+		this.assistantFiles = files.filter((file: TFile) => {
+			return file.path.includes(this.settings.assistants.assistantDefinitionsPath);
+		})
+	}
+
+	async getSuggestions(query: string): Promise<TFile[]> {
+		const filteredAssistants = this.assistantFiles.filter((assistant) => {
+			return assistant.basename.toLowerCase().includes(query.toLowerCase());
+		});
+
+		return filteredAssistants;
+	}
+
+	renderSuggestion(assistantFile: TFile, el: HTMLElement) {
+		el.createEl('h4', { text: assistantFile.basename, cls: 'assistant-suggestion-header' });
+		el.createEl('h6', { text: assistantFile.path, cls: 'assistant-suggestion-path' });
+	}
+
+	onChooseSuggestion(assistantFile: TFile, evt: MouseEvent | KeyboardEvent) {
+		new AssistantFormModal(this.app, this.settings, assistantFile).open();
+	}
+}
+
 class SearchAssistantModal extends SuggestModal<TFile> {
 	app: App;
 	settings: NoteSecretarySettings;
@@ -362,66 +405,6 @@ class SearchAssistantModal extends SuggestModal<TFile> {
 		} else {
 			this.plugin.startNewChat(assistantFile, null);
 		}
-	}
-}
-
-class CreateAssistantModal extends Modal {
-	constructor(app: App, settings: NoteSecretarySettings) {
-		super(app);
-		this.setTitle('Create Assistant');
-
-		this.contentEl.createEl('p', { text: 'Assistant Name' });
-		const nameInput = this.contentEl.createEl('input', { cls: 'system-prompt-textarea' });
-
-		this.contentEl.createEl('p', { text: 'Model' });
-		const modelDropdown = this.contentEl.createEl('select', { cls: 'model-dropdown' });
-
-    const models = OpenAIModels.concat(OllamaModels);
-    models.forEach((model: string) => {
-      const option = modelDropdown.createEl('option', { text: model });
-      option.value = model;
-    });
-
-		this.contentEl.createEl('p', { text: 'System Prompt' });
-		const systemPromptTextarea = this.contentEl.createEl('textarea', { cls: 'system-prompt-textarea' });
-
-		const saveButton = this.contentEl.createEl('button', { text: 'Save', cls: 'save-button', attr: { type: 'button' } });
-
-    saveButton.addEventListener('click', () => {
-      const assistantName = nameInput.value;
-      const selectedModel = modelDropdown.value;
-      const systemPrompt = systemPromptTextarea.value;
-
-			this.app.vault.create(
-				`${settings.assistants.assistantDefinitionsPath}/${assistantName}.md`,
-				`---\nassistant: ${assistantName}.md\nmodel: ${selectedModel}\n---\n${systemPrompt}`
-			).catch(() => {
-				console.log("Unable to create assistant")
-			});
-
-      this.close();
-    });
-	}
-
-	onClose() {
-		const {contentEl} = this;
-		contentEl.empty();
-	}
-}
-
-class ChatModal extends Modal {
-	constructor(app: App) {
-		super(app);
-	}
-
-	onOpen() {
-		const {contentEl} = this;
-		contentEl.setText('Woah!');
-	}
-
-	onClose() {
-		const {contentEl} = this;
-		contentEl.empty();
 	}
 }
 
