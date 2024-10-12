@@ -10,6 +10,25 @@
   color: var(--text-accent);
 }
 
+.assistant-form-modal {
+  width: 50%;
+}
+
+.input-text {
+  width: 100%;
+  color: var(--text-normal);
+  background-color: var(--background-secondary);
+  resize: vertical;
+}
+
+.input-slider {
+  width: '100%';
+}
+
+.save-button {
+  background-color: var(--red);
+}
+
 .chat-container {
   display: flex;
   flex-direction: column;
