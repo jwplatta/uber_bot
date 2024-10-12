@@ -1,4 +1,4 @@
-import { NoteSecretarySettings } from '@/main'
+import { NoteSecretarySettings } from '@/src/settings/NoteSecretarySettings';
 import { App, TFile } from 'obsidian';
 import { OpenAIModels, OllamaModels } from '@/src/settings/llmModels';
 import { OpenAIAssistant } from '@/src/assistants/OpenAIAssistant';
@@ -21,6 +21,7 @@ export async function buildAssistant(app: App, assistantFile: TFile, settings: N
     };
   }
   const model = fileMetadata.frontmatter?.model;
+  const stream = fileMetadata.frontmatter?.stream || false;
 
   const assistantFileText = await app.vault.read(assistantFile);
 
@@ -34,7 +35,7 @@ export async function buildAssistant(app: App, assistantFile: TFile, settings: N
   let assistant: Assistant = {
     model: "",
     systemText: "",
-    stream: false,
+    stream: stream,
     streamResponse: async function* (params: any) {
       yield { content: "" };
     },
@@ -48,7 +49,7 @@ export async function buildAssistant(app: App, assistantFile: TFile, settings: N
       settings.openAI.key,
       model,
       sysText,
-      settings.openAI.stream
+      stream
     );
 
     return assistant;
@@ -57,7 +58,7 @@ export async function buildAssistant(app: App, assistantFile: TFile, settings: N
       settings.ollama.host,
       model,
       sysText,
-      settings.ollama.stream
+      stream
     );
 
     return assistant;

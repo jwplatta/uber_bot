@@ -6,7 +6,7 @@ import {
   ItemView } from 'obsidian';
 import { AssistantMessage } from '@/src/chat/AssistantMessage';
 import { UserMessage } from '@/src/chat/UserMessage';
-import { NoteSecretarySettings } from '@/main'
+import { NoteSecretarySettings } from '@/src/settings/NoteSecretarySettings';
 import { createChatHistoryFile, renameChatHistoryFile } from '@/src/chat/util';
 import { buildAssistant } from '@/src/assistants/buildAssistant';
 import { Assistant } from '@/src/assistants/types';

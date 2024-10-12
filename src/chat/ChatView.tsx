@@ -8,7 +8,7 @@ import {
   TFile,
   ViewStateResult
 } from 'obsidian';
-import { NoteSecretarySettings } from '@/main'
+import { NoteSecretarySettings } from '@/src/settings/NoteSecretarySettings';
 
 export const VIEW_TYPE_CHAT = "chat-view";
 

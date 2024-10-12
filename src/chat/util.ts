@@ -1,6 +1,6 @@
 import OpenAI from 'openai';
 import { App, TFile } from "obsidian";
-import { NoteSecretarySettings } from '@/main'
+import { NoteSecretarySettings } from '@/src/settings/NoteSecretarySettings';
 
 export const createChatHistoryFile = async (file: TFile, app: App, settings: NoteSecretarySettings) => {
   const historyFrontmatter = `---\nassistant: ${file?.path}\ncreated: ${new Date().toLocaleString()}\n---\n`;

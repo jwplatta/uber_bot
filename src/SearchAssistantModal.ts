@@ -1,6 +1,6 @@
 import { App, TFile, SuggestModal } from 'obsidian';
 import NoteSecretary from '@/main'
-import { NoteSecretarySettings } from '@/main';
+import { NoteSecretarySettings } from '@/src/settings/NoteSecretarySettings';
 
 export default class SearchAssistantModal extends SuggestModal<TFile> {
 	app: App;
