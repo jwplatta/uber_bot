@@ -1,7 +1,6 @@
 import { Modal, App, TFile } from 'obsidian';
-import { NoteSecretarySettings } from '@/main';
+import { NoteSecretarySettings } from '@/src/settings/NoteSecretarySettings';
 import { OpenAIModels, OllamaModels } from '@/src/settings/llmModels';
-
 
 export default class AssistantFormModal extends Modal {
 	constructor(app: App, settings: NoteSecretarySettings, assistantFile: TFile | null) {
