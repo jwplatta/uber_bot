@@ -49,10 +49,9 @@ export const ChatComponent: FC<ChatComponentProps> = ({ app, settings, assistant
   }
 
   const loadAssistant = async () => {
-    if(!assistant) {
+    if(!assistant && assistantFile) {
       const asst = await buildAssistant(app, assistantFile as TFile, settings);
       console.log("LOADED ASSISTANT: ", asst);
-
       setAssistant(asst);
     }
   }
