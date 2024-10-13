@@ -13,59 +13,9 @@ import { assistantSettings } from '@/src/settings/AssistantSettings';
 import { chatHistorySettings } from '@/src/settings/ChatHistorySettings';
 import { openAISettings } from '@/src/settings/OpenAISettings';
 import { ollamaSettings } from '@/src/settings/OllamaSettings';
-import AssistantFormModal from '@/src/AssistantFormModal';
+import AssistantFormModal from '@/src/assistants/AssistantFormModal';
 import SearchAssistantModal from '@/src/SearchAssistantModal';
-
-
-export interface NoteSecretarySettings {
-	assistants: {
-		assistant: string;
-		assistantDefinitionsPath: string;
-	},
-	chatHistory: {
-		chatHistoryPath: string;
-	},
-	openAI: {
-		key: string;
-		model: string;
-		stream: boolean;
-	},
-	ollama: {
-		host: string;
-		model: string;
-		models: string[];
-		stream: boolean;
-	},
-	toggleProfileSettings: boolean,
-	toggleChatHistorySettings: boolean,
-	toggleOpenAISettings: boolean,
-	toggleOllamaSettings: boolean
-}
-
-const DEFAULT_SETTINGS: NoteSecretarySettings = {
-	assistants: {
-		assistant: 'NoteSecretary/Assistants/DefaultAssistant.md',
-		assistantDefinitionsPath: 'NoteSecretary/Assistants',
-	},
-	chatHistory: {
-		chatHistoryPath: 'NoteSecretary/ChatHistory',
-	},
-	openAI: {
-		key: '',
-		model: 'gpt-4o-mini',
-		stream: true
-	},
-	ollama: {
-		host: 'http://localhost:11434',
-		model: 'llama3.2:latest',
-		models: [],
-		stream: true
-	},
-	toggleProfileSettings: false,
-	toggleChatHistorySettings: false,
-	toggleOpenAISettings: false,
-	toggleOllamaSettings: false
-}
+import { NoteSecretarySettings, DEFAULT_SETTINGS } from '@/src/settings/NoteSecretarySettings';
 
 export default class NoteSecretary extends Plugin {
 	settings: NoteSecretarySettings;
@@ -107,6 +57,19 @@ export default class NoteSecretary extends Plugin {
 				this.activateChatHistoryView();
 			}
 		})
+
+		this.addCommand({
+			id: 'load-model',
+			name: 'Load Model',
+			callback: () => {
+					async function loadModel() {
+							const model = await pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2');
+							return model;
+					}
+					loadModel();
+			}
+		});
+
 
 		this.addCommand({
 			id: 'select-assistant',
@@ -252,10 +215,6 @@ export default class NoteSecretary extends Plugin {
 
 	async loadSettings() {
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
-
-		console.log('DEFAULT_SETTINGS: ', DEFAULT_SETTINGS);
-		console.log('Loaded settings: ', this.settings);
-
 		const assistantsDir = this.app.vault.getFolderByPath(
 			this.settings.assistants.assistantDefinitionsPath
 		)
