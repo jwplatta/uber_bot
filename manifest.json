@@ -1,6 +1,6 @@
 {
-	"id": "note-secretary",
-	"name": "Note Secretary",
+	"id": "uber-bot",
+	"name": "Uber Bot",
 	"version": "1.0.0",
 	"minAppVersion": "0.15.0",
 	"description": "Chat with your notes.",

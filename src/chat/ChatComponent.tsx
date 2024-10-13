@@ -6,14 +6,14 @@ import {
   ItemView } from 'obsidian';
 import { AssistantMessage } from '@/src/chat/AssistantMessage';
 import { UserMessage } from '@/src/chat/UserMessage';
-import { NoteSecretarySettings } from '@/src/settings/NoteSecretarySettings';
+import { UberBotSettings } from '@/src/settings/UberBotSettings';
 import { createChatHistoryFile, renameChatHistoryFile } from '@/src/chat/util';
 import { buildAssistant } from '@/src/assistants/buildAssistant';
 import { Assistant } from '@/src/assistants/types';
 
 interface ChatComponentProps {
   app: App;
-  settings: NoteSecretarySettings;
+  settings: UberBotSettings;
   assistantFile: TFile | null;
   noteContextFile: TFile | null;
   chatView: ItemView

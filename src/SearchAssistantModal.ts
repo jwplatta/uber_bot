@@ -1,15 +1,15 @@
 import { App, TFile, SuggestModal } from 'obsidian';
-import NoteSecretary from '@/main'
-import { NoteSecretarySettings } from '@/src/settings/NoteSecretarySettings';
+import UberBot from '@/main'
+import { UberBotSettings } from '@/src/settings/UberBotSettings';
 
 export default class SearchAssistantModal extends SuggestModal<TFile> {
 	app: App;
-	settings: NoteSecretarySettings;
-	plugin: NoteSecretary;
+	settings: UberBotSettings;
+	plugin: UberBot;
 	chatWithNote: boolean;
 	assistantFiles: TFile[];
 
-	constructor(app: App, settings: NoteSecretarySettings, plugin: NoteSecretary, chatWithNote = false) {
+	constructor(app: App, settings: UberBotSettings, plugin: UberBot, chatWithNote = false) {
 		super(app);
 		this.app = app;
 		this.settings = settings;

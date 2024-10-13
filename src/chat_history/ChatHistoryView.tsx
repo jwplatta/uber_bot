@@ -35,6 +35,7 @@ export class ChatHistoryView extends ItemView {
   async onOpen() {
     const container = this.containerEl.children[1];
     container.empty();
+
     this.root = createRoot(container);
     this.root.render(
       <StrictMode>

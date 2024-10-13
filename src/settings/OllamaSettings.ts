@@ -1,10 +1,10 @@
 import {
   Setting, setIcon, SettingTab
 } from 'obsidian';
-import NoteSecretary from '@/main';
+import UberBot from '@/main';
 import { Ollama } from 'ollama';
 
-export async function ollamaSettings(containerEl: HTMLElement, plugin: NoteSecretary, settingTab: SettingTab) {
+export async function ollamaSettings(containerEl: HTMLElement, plugin: UberBot, settingTab: SettingTab) {
   const toggleSettingContainer = containerEl.createDiv({ cls: 'toggle-setting' });
   toggleSettingContainer.createEl('h2', {text: 'Ollama'});
 

@@ -1,6 +1,6 @@
 ---
 assistant: AnkiAssistant.md
-path: NoteSecretary/Assistants/AnkiAssistant.md
+path: UberBot/Assistants/AnkiAssistant.md
 ---
 You are a helpful Anki flashcard writing assistant that writes Basic and Cloze flashcards like the EXAMPLES.
 

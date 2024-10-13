@@ -8,7 +8,7 @@ import {
   TFile,
   ViewStateResult
 } from 'obsidian';
-import { NoteSecretarySettings } from '@/src/settings/NoteSecretarySettings';
+import { UberBotSettings } from '@/src/settings/UberBotSettings';
 
 export const VIEW_TYPE_CHAT = "chat-view";
 
@@ -20,14 +20,14 @@ interface ChatViewState {
 export class ChatView extends ItemView implements ChatViewState {
   root: Root | null = null;
   app: App;
-  settings: NoteSecretarySettings;
+  settings: UberBotSettings;
   assistantFile: TFile | null = null;
   noteContextFile: TFile | null = null;
 
   constructor(
     readonly leaf: WorkspaceLeaf,
     app: App,
-    settings: NoteSecretarySettings,
+    settings: UberBotSettings,
     assistantFile: TFile | null,
     noteContextFile: TFile | null
   ) {
@@ -76,6 +76,7 @@ export class ChatView extends ItemView implements ChatViewState {
   async render () {
     const container = this.containerEl.children[1];
     container.empty();
+
     this.root = createRoot(container);
     this.root.render(
       <StrictMode>

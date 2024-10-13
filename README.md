@@ -1,4 +1,4 @@
-# Note Secretary Plugin for Obsidian
+# Uber Bot Plugin for Obsidian
 
 ## How to use
 
@@ -48,3 +48,13 @@ If you have multiple URLs, you can also do:
 ## API Documentation
 
 See https://github.com/obsidianmd/obsidian-api
+
+
+
+```
+curl http://localhost:11434/api/generate -d '{
+  "model": "llama3.2",
+  "prompt": "def compute_gcd(a, b):",
+  "stream": false
+}'
+```

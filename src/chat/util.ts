@@ -1,8 +1,8 @@
 import OpenAI from 'openai';
 import { App, TFile } from "obsidian";
-import { NoteSecretarySettings } from '@/src/settings/NoteSecretarySettings';
+import { UberBotSettings } from '@/src/settings/UberBotSettings';
 
-export const createChatHistoryFile = async (file: TFile, app: App, settings: NoteSecretarySettings) => {
+export const createChatHistoryFile = async (file: TFile, app: App, settings: UberBotSettings) => {
   const historyFrontmatter = `---\nassistant: ${file?.path}\ncreated: ${new Date().toLocaleString()}\n---\n`;
   const title = `${file?.basename}-${Date.now()}.md`;
   const chatHistFile = await app.vault.create(
@@ -12,7 +12,7 @@ export const createChatHistoryFile = async (file: TFile, app: App, settings: Not
   return chatHistFile;
 }
 
-export const renameChatHistoryFile = async (chatHistoryFile: TFile, app: App, settings: NoteSecretarySettings) => {
+export const renameChatHistoryFile = async (chatHistoryFile: TFile, app: App, settings: UberBotSettings) => {
   if (!chatHistoryFile.parent) {
     return;
   }

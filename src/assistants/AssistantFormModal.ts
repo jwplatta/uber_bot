@@ -1,9 +1,9 @@
 import { Modal, App, TFile } from 'obsidian';
-import { NoteSecretarySettings } from '@/src/settings/NoteSecretarySettings';
+import { UberBotSettings } from '@/src/settings/UberBotSettings';
 import { OpenAIModels, OllamaModels } from '@/src/settings/llmModels';
 
 export default class AssistantFormModal extends Modal {
-	constructor(app: App, settings: NoteSecretarySettings, assistantFile: TFile | null) {
+	constructor(app: App, settings: UberBotSettings, assistantFile: TFile | null) {
 		super(app);
 
 		if (assistantFile) {

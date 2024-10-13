@@ -15,10 +15,10 @@ import { openAISettings } from '@/src/settings/OpenAISettings';
 import { ollamaSettings } from '@/src/settings/OllamaSettings';
 import AssistantFormModal from '@/src/assistants/AssistantFormModal';
 import SearchAssistantModal from '@/src/SearchAssistantModal';
-import { NoteSecretarySettings, DEFAULT_SETTINGS } from '@/src/settings/NoteSecretarySettings';
+import { UberBotSettings, DEFAULT_SETTINGS } from '@/src/settings/UberBotSettings';
 
-export default class NoteSecretary extends Plugin {
-	settings: NoteSecretarySettings;
+export default class UberBot extends Plugin {
+	settings: UberBotSettings;
 
 	async onload() {
 		await this.loadSettings();
@@ -40,15 +40,14 @@ export default class NoteSecretary extends Plugin {
 		// 	console.log('File modified: ', file.path);
 		// })
 
-		const ribbonIconEl = this.addRibbonIcon('bot', 'NoteSecretary', (evt: MouseEvent) => {
+		const ribbonIconEl = this.addRibbonIcon('bot', 'UberBot', (evt: MouseEvent) => {
       this.activateChatView();
 		});
 		// Perform additional things with the ribbon
-		ribbonIconEl.addClass('note-secretary-ribbon-class');
-
+		ribbonIconEl.addClass('uber-bot-ribbon-class');
 		// This adds a status bar item to the bottom of the app. Does not work on mobile apps.
 		// const statusBarItemEl = this.addStatusBarItem();
-		// statusBarItemEl.setText('note-secretary Status');
+		// statusBarItemEl.setText('Uber Bot Status');
 
 		this.addCommand({
 			id: 'open-chat-history',
@@ -57,19 +56,6 @@ export default class NoteSecretary extends Plugin {
 				this.activateChatHistoryView();
 			}
 		})
-
-		this.addCommand({
-			id: 'load-model',
-			name: 'Load Model',
-			callback: () => {
-					async function loadModel() {
-							const model = await pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2');
-							return model;
-					}
-					loadModel();
-			}
-		});
-
 
 		this.addCommand({
 			id: 'select-assistant',
@@ -132,7 +118,7 @@ export default class NoteSecretary extends Plugin {
 		});
 
 		// This adds a settings tab so the user can configure various aspects of the plugin
-		this.addSettingTab(new NoteSecretarySettingTab(this.app, this));
+		this.addSettingTab(new UberBotSettingTab(this.app, this));
 
 		// If the plugin hooks up any global DOM events (on parts of the app that doesn't belong to this plugin)
 		// Using this function will automatically remove the event listener when this plugin is disabled.
@@ -257,10 +243,10 @@ interface Chat {
 
 class SearchChatHistory extends FuzzySuggestModal<Chat> {
 	app: App;
-	settings: NoteSecretarySettings;
+	settings: UberBotSettings;
 	chats: Chat[];
 
-	constructor(app: App, settings: NoteSecretarySettings) {
+	constructor(app: App, settings: UberBotSettings) {
 		super(app);
 		this.app = app;
 		this.settings = settings;
@@ -293,10 +279,10 @@ class SearchChatHistory extends FuzzySuggestModal<Chat> {
 
 class SelectEditAssistanModal extends SuggestModal<TFile> {
 	app: App;
-	settings: NoteSecretarySettings;
+	settings: UberBotSettings;
 	assistantFiles: TFile[];
 
-	constructor(app: App, settings: NoteSecretarySettings) {
+	constructor(app: App, settings: UberBotSettings) {
 		super(app);
 		this.app = app;
 		this.settings = settings;
@@ -325,10 +311,10 @@ class SelectEditAssistanModal extends SuggestModal<TFile> {
 	}
 }
 
-class NoteSecretarySettingTab extends PluginSettingTab {
-	plugin: NoteSecretary;
+class UberBotSettingTab extends PluginSettingTab {
+	plugin: UberBot;
 
-	constructor(app: App, plugin: NoteSecretary) {
+	constructor(app: App, plugin: UberBot) {
 		super(app, plugin);
 		this.plugin = plugin;
 	}
@@ -336,7 +322,7 @@ class NoteSecretarySettingTab extends PluginSettingTab {
 	display(): void {
 		const { containerEl } = this;
 		containerEl.empty();
-		containerEl.createEl('h1', { text: 'Note Secretary Settings' });
+		containerEl.createEl('h1', { text: 'Uber Bot Settings' });
 
 		addHorizontalRule(containerEl);
 		assistantSettings(containerEl, this.plugin, this);

@@ -1,4 +1,4 @@
-export interface NoteSecretarySettings {
+export interface UberBotSettings {
 	assistants: {
 		assistant: string;
 		assistantDefinitionsPath: string;
@@ -23,13 +23,13 @@ export interface NoteSecretarySettings {
 	toggleOllamaSettings: boolean
 }
 
-export const DEFAULT_SETTINGS: NoteSecretarySettings = {
+export const DEFAULT_SETTINGS: UberBotSettings = {
 	assistants: {
-		assistant: 'NoteSecretary/Assistants/DefaultAssistant.md',
-		assistantDefinitionsPath: 'NoteSecretary/Assistants',
+		assistant: 'UberBot/Assistants/DefaultAssistant.md',
+		assistantDefinitionsPath: 'UberBot/Assistants',
 	},
 	chatHistory: {
-		chatHistoryPath: 'NoteSecretary/ChatHistory',
+		chatHistoryPath: 'UberBot/ChatHistory',
 	},
 	openAI: {
 		key: '',

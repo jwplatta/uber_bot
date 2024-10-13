@@ -1,12 +1,12 @@
-import { NoteSecretarySettings } from '@/src/settings/NoteSecretarySettings';
+import { UberBotSettings } from '@/src/settings/UberBotSettings';
 import { App, TFile } from 'obsidian';
 import { OpenAIModels, OllamaModels } from '@/src/settings/llmModels';
 import { OpenAIAssistant } from '@/src/assistants/OpenAIAssistant';
 import { OllamaAssistant } from '@/src/assistants/OllamaAssistant';
 import { Assistant } from '@/src/assistants/types';
 
-export async function buildAssistant(app: App, assistantFile: TFile, settings: NoteSecretarySettings): Promise<Assistant> {
-  const fileMetadata = app.metadataCache.getFileCache(assistantFile)
+export async function buildAssistant(app: App, assistantFile: TFile, settings: UberBotSettings): Promise<Assistant> {
+  const fileMetadata = await app.metadataCache.getFileCache(assistantFile)
   if (!fileMetadata) {
     return {
       model: "",
