@@ -56,6 +56,14 @@ export const ChatComponent: FC<ChatComponentProps> = ({ app, settings, assistant
     }
   }
 
+  const resetAssistant = async () => {
+    if (assistantFile) {
+      const asst = await buildAssistant(app, assistantFile as TFile, settings);
+      console.log("LOADED ASSISTANT: ", asst);
+      setAssistant(asst);
+    }
+  }
+
   useEffect(() => {
     // if (containerRef.current) {
     //   // Clear any existing content in the container
@@ -88,8 +96,8 @@ export const ChatComponent: FC<ChatComponentProps> = ({ app, settings, assistant
     startChatHistory();
 
     if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto'; // Reset the height first
-      textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px'; // Adjust to content
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
     }
 
     if(showInput) {
@@ -208,6 +216,7 @@ export const ChatComponent: FC<ChatComponentProps> = ({ app, settings, assistant
       settings
     );
     setChatHistoryFile(newChatHistoryFile);
+    resetAssistant();
     setMessages([]);
   }
 
