@@ -3,6 +3,7 @@ import { App, TFile } from 'obsidian';
 import { OpenAIModels, OllamaModels } from '@/src/settings/llmModels';
 import { OpenAIAssistant } from '@/src/assistants/OpenAIAssistant';
 import { OllamaAssistant } from '@/src/assistants/OllamaAssistant';
+import { UberBot } from '@/src/assistants/UberBot';
 import { Assistant } from '@/src/assistants/types';
 
 export async function buildAssistant(app: App, assistantFile: TFile, settings: UberBotSettings): Promise<Assistant> {
@@ -62,6 +63,13 @@ export async function buildAssistant(app: App, assistantFile: TFile, settings: U
     );
 
     return assistant;
+  } else if (model === "uber-bot") {
+    return new UberBot(
+      settings.ollama.host,
+      "llama3.2:latest",
+      app,
+      settings
+    );
   } else {
     return assistant;
   }
