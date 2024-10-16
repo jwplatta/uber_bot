@@ -85,20 +85,78 @@ const filterFiles = async (app: App, filter: string) => {
   }
 }
 
-// const listFiles = async (app: App, filter: string) => {
-
-// }
+interface Step {
+  order:  number;
+  prompt: string;
+  function: string;
+  result: string;
+}
 
 export class UberBot implements Assistant {
   tools = {
-    moveFile: moveFile,
-    filterFiles: filterFiles
+    moveFile: {
+      function: moveFile,
+      description: "Moves a file to the destination path",
+      parameters: {
+        file: {
+          type: TFile,
+          description: "The file to move"
+        },
+        destPath: {
+          type: string,
+          description: "The destination path"
+        }
+      }
+    },
+    filterFiles: {
+      function: filterFiles,
+      description: "Filters files based on a string",
+      parameters: {
+        filter: {
+          type: string,
+          description: "The string to filter files by"
+        }
+      }
+    }
   };
   helpers = {
-    chainOfThought: chainOfThoughtTemplate,
-    problemDecomposition: decompositionTemplate
+    chainOfThought: {
+      function: chainOfThoughtTemplate,
+      description: "Provides a step by step solution to a complex request",
+      parameters: {
+        request: {
+          type: string,
+          description: "The user request"
+        },
+        tools: {
+          type: string[],
+          description: "The available tools"
+        },
+        helpers: {
+          type: string[],
+          description: "The available helpers"
+        }
+      }
+    },
+    problemDecomposition: {
+      function: decompositionTemplate,
+      description: decompositionTemplate,
+      parameters: {
+        request: {
+          type: string,
+          description: "The user request"
+        },
+        tools: {
+          type: string[],
+          description: "The available tools"
+        },
+        helpers: {
+          type: string[],
+          description: "The available helpers"
+        }
+      }
+    }
   }
-  // const memory = {};
 
   model: string;
   app: App;
@@ -107,7 +165,6 @@ export class UberBot implements Assistant {
   host: string;
   stream: boolean;
   systemText: string;
-
 
   constructor(host: string, model: string, app: App, settings: UberBotSettings) {
     this.host = host;
