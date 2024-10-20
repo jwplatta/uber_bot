@@ -42,22 +42,28 @@ const buildHelperPrompt = (promptTemplate: string, request: string, tools: strin
 }
 
 const controlTemplate = `GENERAL INSTRUCTIONS
-Your task is to fulfill user requests. If you cannot immediately fulfill the request, then use a HELPER or a TOOL. Fill with Nil where no TOOL or HELPER is required.
+Your task is to answer user requests. If you cannot immediately fulfill the request, then use a HELPER or a TOOL. Please return your response using exactly the OUTPUT-FORMAT. Do not return any other text.
 
-AVAILABLE TOOLS
-{{tool_names}}
-
-AVAILABLE HELPERS
-{{helper_names}}
-
-CONTEXTUAL INFORMATION
-{{context}}
-
-REQUEST
+<REQUEST>
 {{user_request}}
+</REQUEST>
 
-ANSWER FORMAT
-{"Tool_Request": "<Fill>", "Helper_Request "<Fill>"}`
+<AVAILABLE-TOOLS>
+{{tool_names}}
+</AVAILABLE-TOOLS>
+
+<AVAILABLE-HELPERS>
+{{helper_names}}
+</AVAILABLE-HELPERS>
+
+<CONTEXTUAL-INFORMATION>
+{{context}}
+</CONTEXTUAL-INFORMATION>
+
+<OUTPUT-FORMAT>
+{"Tool": <string>, "Helper": <string>, "Answer": <string>}
+</OUTPUT-FORMAT>`
+
 
 const buildControlPrompt = (tools: string[], helpers: string[], context: string, user_request: string) => {
   return controlTemplate
@@ -99,11 +105,11 @@ export class UberBot implements Assistant {
       description: "Moves a file to the destination path",
       parameters: {
         file: {
-          type: TFile,
+          type: "TFile",
           description: "The file to move"
         },
         destPath: {
-          type: string,
+          type: "string",
           description: "The destination path"
         }
       }
@@ -113,7 +119,7 @@ export class UberBot implements Assistant {
       description: "Filters files based on a string",
       parameters: {
         filter: {
-          type: string,
+          type: "string",
           description: "The string to filter files by"
         }
       }
@@ -125,15 +131,15 @@ export class UberBot implements Assistant {
       description: "Provides a step by step solution to a complex request",
       parameters: {
         request: {
-          type: string,
+          type: "string",
           description: "The user request"
         },
         tools: {
-          type: string[],
+          type: "string[]",
           description: "The available tools"
         },
         helpers: {
-          type: string[],
+          type: "string[]",
           description: "The available helpers"
         }
       }
@@ -143,15 +149,15 @@ export class UberBot implements Assistant {
       description: decompositionTemplate,
       parameters: {
         request: {
-          type: string,
+          type: "string",
           description: "The user request"
         },
         tools: {
-          type: string[],
+          type: "string[]",
           description: "The available tools"
         },
         helpers: {
-          type: string[],
+          type: "string[]",
           description: "The available helpers"
         }
       }
@@ -181,56 +187,80 @@ export class UberBot implements Assistant {
     const context = params.messages.map((message: any) => {
         return `${message.role}: ${message.content}`
     }).join("\n");
+    const instruction = await this.nextInstruction(context, params.newMessage.content);
 
-    const completion = await this.ollama.generate({
-      model: this.model,
-      prompt: buildControlPrompt(
-        Object.keys(this.tools),
-        Object.keys(this.helpers),
-        context,
-        params.newMessage.content
-      ),
-    });
+    console.log(instruction);
 
-    const instructions = JSON.parse(completion.response);
-    console.log(instructions);
+    if (instruction.Answer) {
+      return { content: instruction.Answer };
+    } else if (instruction.Tool) {
+      console.log("use the tool")
 
-    if(instructions.Helper_Request !== "Nil") {
-      let prompt = "";
-      if (instructions.Helper_Request === "chainOfThought") {
-        prompt = buildHelperPrompt(
-          this.helpers.chainOfThought,
-          params.newMessage.content,
-          Object.keys(this.tools),
-          Object.keys(this.helpers)
-        );
-      } else if (instructions.Helper_Request === "problemDecomposition") {
-        prompt = buildHelperPrompt(
-          this.helpers.problemDecomposition,
-          params.newMessage.content,
-          Object.keys(this.tools),
-          Object.keys(this.helpers)
-        );
-      }
+      return { content: "use the tool" };
+    } else if (instruction.Helper) {
+      console.log("use the helper")
 
-      console.log("HELPER Prompt: ", prompt);
-
-      const completion = await this.ollama.generate({
-        model: this.model,
-        prompt: prompt
-      });
-      console.log(completion)
-
-      const response = JSON.parse(completion.response);
-      console.log(response);
+      return { content: "use the helper" };
+    } else {
+      return { content: "no content" };
     }
+  }
     // if (response.Tool_Request !== "Nil") {
     //   const tool = this.tools[response.Tool_Request];
     //   const result = await tool(this.app, params.noteContext, params.newMessage.content);
     //   return { content: result ? "Success" : "Failure" };
     // }
 
-    return { content: "RESPONSE NOT IMPLEMENTED" };
+
+  //   if(instructions.Helper_Request !== "Nil") {
+  //     let prompt = "";
+  //     if (instructions.Helper_Request === "chainOfThought") {
+  //       prompt = buildHelperPrompt(
+  //         this.helpers.chainOfThought,
+  //         params.newMessage.content,
+  //         Object.keys(this.tools),
+  //         Object.keys(this.helpers)
+  //       );
+  //     } else if (instructions.Helper_Request === "problemDecomposition") {
+  //       prompt = buildHelperPrompt(
+  //         this.helpers.problemDecomposition,
+  //         params.newMessage.content,
+  //         Object.keys(this.tools),
+  //         Object.keys(this.helpers)
+  //       );
+  //     }
+
+  //     console.log("HELPER Prompt: ", prompt);
+
+  //     const completion = await this.ollama.generate({
+  //       model: this.model,
+  //       prompt: prompt
+  //     });
+  //     console.log(completion)
+
+  //     const response = JSON.parse(completion.response);
+  //     console.log(response);
+  //   }
+
+  //   return { content: "RESPONSE NOT IMPLEMENTED" };
+  // }
+
+  async nextInstruction(context: string, msg: string): Promise<any> {
+    const completion = await this.ollama.generate({
+      model: this.model,
+      prompt: buildControlPrompt(
+        Object.keys(this.tools),
+        Object.keys(this.helpers),
+        context,
+        msg
+      ),
+    });
+
+    try {
+      return JSON.parse(completion.response)
+    } catch {
+      return {Tool: null, Helper: null, Answer: null}
+    }
   }
 
   async *streamResponse(params: any): AsyncGenerator<Content> {
