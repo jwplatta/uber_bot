@@ -1,0 +1,11 @@
+{
+	"id": "uber-bot",
+	"name": "Uber Bot",
+	"version": "1.0.0",
+	"minAppVersion": "0.15.0",
+	"description": "Chat with your notes.",
+	"author": "jwplatta",
+	"authorUrl": "https://obsidian.md",
+	"fundingUrl": "https://obsidian.md/pricing",
+	"isDesktopOnly": false
+}
