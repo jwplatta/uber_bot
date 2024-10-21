@@ -2,20 +2,21 @@ import {
   App, WorkspaceLeaf,
   MarkdownView,
 	Plugin,
-	PluginSettingTab,
+	// PluginSettingTab,
 	SuggestModal,
 	TFile,
 	FuzzySuggestModal
 } from 'obsidian';
 import { VIEW_TYPE_CHAT, ChatView } from "@/src/chat/ChatView";
 import { VIEW_TYPE_CHAT_HISTORY, ChatHistoryView } from "@/src/chat_history/ChatHistoryView";
-import { assistantSettings } from '@/src/settings/AssistantSettings';
-import { chatHistorySettings } from '@/src/settings/ChatHistorySettings';
-import { openAISettings } from '@/src/settings/OpenAISettings';
-import { ollamaSettings } from '@/src/settings/OllamaSettings';
+// import { assistantSettings } from '@/src/settings/AssistantSettings';
+// import { chatHistorySettings } from '@/src/settings/ChatHistorySettings';
+// import { openAISettings } from '@/src/settings/OpenAISettings';
+// import { ollamaSettings } from '@/src/settings/OllamaSettings';
 import AssistantFormModal from '@/src/assistants/AssistantFormModal';
 import SearchAssistantModal from '@/src/SearchAssistantModal';
 import { UberBotSettings, DEFAULT_SETTINGS } from '@/src/settings/UberBotSettings';
+import { UberBotSettingTab } from '@/src/settings/UberBotSettingTab'
 
 export default class UberBot extends Plugin {
 	settings: UberBotSettings;
@@ -309,37 +310,4 @@ class SelectEditAssistanModal extends SuggestModal<TFile> {
 	onChooseSuggestion(assistantFile: TFile, evt: MouseEvent | KeyboardEvent) {
 		new AssistantFormModal(this.app, this.settings, assistantFile).open();
 	}
-}
-
-class UberBotSettingTab extends PluginSettingTab {
-	plugin: UberBot;
-
-	constructor(app: App, plugin: UberBot) {
-		super(app, plugin);
-		this.plugin = plugin;
-	}
-
-	display(): void {
-		const { containerEl } = this;
-		containerEl.empty();
-		containerEl.createEl('h1', { text: 'Uber Bot Settings' });
-
-		addHorizontalRule(containerEl);
-		assistantSettings(containerEl, this.plugin, this);
-
-		addHorizontalRule(containerEl);
-		chatHistorySettings(containerEl, this.plugin, this);
-
-		addHorizontalRule(containerEl);
-		openAISettings(containerEl, this.plugin, this);
-
-		addHorizontalRule(containerEl);
-		ollamaSettings(containerEl, this.plugin, this);
-	}
-}
-
-function addHorizontalRule(containerEl: HTMLElement) {
-	const separator = document.createElement('hr');
-	separator.style.margin = '1rem 0';
-	containerEl.appendChild(separator);
 }
