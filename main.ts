@@ -1,11 +1,8 @@
 import {
-  App, WorkspaceLeaf,
+  WorkspaceLeaf,
   MarkdownView,
 	Plugin,
-	// PluginSettingTab,
-	// SuggestModal,
 	TFile,
-	FuzzySuggestModal
 } from 'obsidian';
 import { VIEW_TYPE_CHAT, ChatView } from "@/src/chat/ChatView";
 import { VIEW_TYPE_CHAT_HISTORY, ChatHistoryView } from "@/src/chat_history/ChatHistoryView";
@@ -13,6 +10,7 @@ import { SelectEditAssistanModal, AssistantFormModal } from '@/src/assistants/mo
 import SearchAssistantModal from '@/src/SearchAssistantModal';
 import { UberBotSettings, DEFAULT_SETTINGS } from '@/src/settings/UberBotSettings';
 import { UberBotSettingTab } from '@/src/settings/UberBotSettingTab'
+import { SearchChatHistory } from '@/src/chat_history/modals';
 
 export default class UberBot extends Plugin {
 	settings: UberBotSettings;
@@ -232,78 +230,3 @@ export default class UberBot extends Plugin {
 		await this.saveData(this.settings);
 	}
 }
-
-interface Chat {
-	file: TFile;
-	content: string;
-}
-
-class SearchChatHistory extends FuzzySuggestModal<Chat> {
-	app: App;
-	settings: UberBotSettings;
-	chats: Chat[];
-
-	constructor(app: App, settings: UberBotSettings) {
-		super(app);
-		this.app = app;
-		this.settings = settings;
-		const files = this.app.vault.getMarkdownFiles().filter((file: TFile) => {
-			return file.path.includes(this.settings.chatHistory.chatHistoryPath);
-		});
-
-		this.chats = files.map((file: TFile) => {
-			const fc = app.metadataCache.getFileCache(file);
-			const tags = fc?.frontmatter?.tags || "";
-			return {
-				file: file,
-				content: file.basename + ": " + tags
-			};
-		});
-	}
-
-  getItems(): Chat[] {
-		return this.chats;
-  }
-
-  getItemText(chat: Chat): string {
-		return chat.content;
-  }
-
-  async onChooseItem(chat: Chat, evt: MouseEvent | KeyboardEvent) {
-    await this.app.workspace.getLeaf().openFile(chat.file);
-  }
-}
-
-// class SelectEditAssistanModal extends SuggestModal<TFile> {
-// 	app: App;
-// 	settings: UberBotSettings;
-// 	assistantFiles: TFile[];
-
-// 	constructor(app: App, settings: UberBotSettings) {
-// 		super(app);
-// 		this.app = app;
-// 		this.settings = settings;
-
-// 		const files = this.app.vault.getMarkdownFiles();
-// 		this.assistantFiles = files.filter((file: TFile) => {
-// 			return file.path.includes(this.settings.assistants.assistantDefinitionsPath);
-// 		})
-// 	}
-
-// 	async getSuggestions(query: string): Promise<TFile[]> {
-// 		const filteredAssistants = this.assistantFiles.filter((assistant) => {
-// 			return assistant.basename.toLowerCase().includes(query.toLowerCase());
-// 		});
-
-// 		return filteredAssistants;
-// 	}
-
-// 	renderSuggestion(assistantFile: TFile, el: HTMLElement) {
-// 		el.createEl('h4', { text: assistantFile.basename, cls: 'assistant-suggestion-header' });
-// 		el.createEl('h6', { text: assistantFile.path, cls: 'assistant-suggestion-path' });
-// 	}
-
-// 	onChooseSuggestion(assistantFile: TFile, evt: MouseEvent | KeyboardEvent) {
-// 		new AssistantFormModal(this.app, this.settings, assistantFile).open();
-// 	}
-// }
