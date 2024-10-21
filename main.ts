@@ -3,17 +3,13 @@ import {
   MarkdownView,
 	Plugin,
 	// PluginSettingTab,
-	SuggestModal,
+	// SuggestModal,
 	TFile,
 	FuzzySuggestModal
 } from 'obsidian';
 import { VIEW_TYPE_CHAT, ChatView } from "@/src/chat/ChatView";
 import { VIEW_TYPE_CHAT_HISTORY, ChatHistoryView } from "@/src/chat_history/ChatHistoryView";
-// import { assistantSettings } from '@/src/settings/AssistantSettings';
-// import { chatHistorySettings } from '@/src/settings/ChatHistorySettings';
-// import { openAISettings } from '@/src/settings/OpenAISettings';
-// import { ollamaSettings } from '@/src/settings/OllamaSettings';
-import AssistantFormModal from '@/src/assistants/AssistantFormModal';
+import { SelectEditAssistanModal, AssistantFormModal } from '@/src/assistants/modals';
 import SearchAssistantModal from '@/src/SearchAssistantModal';
 import { UberBotSettings, DEFAULT_SETTINGS } from '@/src/settings/UberBotSettings';
 import { UberBotSettingTab } from '@/src/settings/UberBotSettingTab'
@@ -278,36 +274,36 @@ class SearchChatHistory extends FuzzySuggestModal<Chat> {
   }
 }
 
-class SelectEditAssistanModal extends SuggestModal<TFile> {
-	app: App;
-	settings: UberBotSettings;
-	assistantFiles: TFile[];
+// class SelectEditAssistanModal extends SuggestModal<TFile> {
+// 	app: App;
+// 	settings: UberBotSettings;
+// 	assistantFiles: TFile[];
 
-	constructor(app: App, settings: UberBotSettings) {
-		super(app);
-		this.app = app;
-		this.settings = settings;
+// 	constructor(app: App, settings: UberBotSettings) {
+// 		super(app);
+// 		this.app = app;
+// 		this.settings = settings;
 
-		const files = this.app.vault.getMarkdownFiles();
-		this.assistantFiles = files.filter((file: TFile) => {
-			return file.path.includes(this.settings.assistants.assistantDefinitionsPath);
-		})
-	}
+// 		const files = this.app.vault.getMarkdownFiles();
+// 		this.assistantFiles = files.filter((file: TFile) => {
+// 			return file.path.includes(this.settings.assistants.assistantDefinitionsPath);
+// 		})
+// 	}
 
-	async getSuggestions(query: string): Promise<TFile[]> {
-		const filteredAssistants = this.assistantFiles.filter((assistant) => {
-			return assistant.basename.toLowerCase().includes(query.toLowerCase());
-		});
+// 	async getSuggestions(query: string): Promise<TFile[]> {
+// 		const filteredAssistants = this.assistantFiles.filter((assistant) => {
+// 			return assistant.basename.toLowerCase().includes(query.toLowerCase());
+// 		});
 
-		return filteredAssistants;
-	}
+// 		return filteredAssistants;
+// 	}
 
-	renderSuggestion(assistantFile: TFile, el: HTMLElement) {
-		el.createEl('h4', { text: assistantFile.basename, cls: 'assistant-suggestion-header' });
-		el.createEl('h6', { text: assistantFile.path, cls: 'assistant-suggestion-path' });
-	}
+// 	renderSuggestion(assistantFile: TFile, el: HTMLElement) {
+// 		el.createEl('h4', { text: assistantFile.basename, cls: 'assistant-suggestion-header' });
+// 		el.createEl('h6', { text: assistantFile.path, cls: 'assistant-suggestion-path' });
+// 	}
 
-	onChooseSuggestion(assistantFile: TFile, evt: MouseEvent | KeyboardEvent) {
-		new AssistantFormModal(this.app, this.settings, assistantFile).open();
-	}
-}
+// 	onChooseSuggestion(assistantFile: TFile, evt: MouseEvent | KeyboardEvent) {
+// 		new AssistantFormModal(this.app, this.settings, assistantFile).open();
+// 	}
+// }

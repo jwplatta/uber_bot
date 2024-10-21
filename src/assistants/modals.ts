@@ -1,8 +1,42 @@
-import { Modal, App, TFile } from 'obsidian';
+import { SuggestModal, Modal, App, TFile } from 'obsidian';
 import { UberBotSettings } from '@/src/settings/UberBotSettings';
 import { OpenAIModels, OllamaModels } from '@/src/settings/llmModels';
 
-export default class AssistantFormModal extends Modal {
+export class SelectEditAssistanModal extends SuggestModal<TFile> {
+	app: App;
+	settings: UberBotSettings;
+	assistantFiles: TFile[];
+
+	constructor(app: App, settings: UberBotSettings) {
+		super(app);
+		this.app = app;
+		this.settings = settings;
+
+		const files = this.app.vault.getMarkdownFiles();
+		this.assistantFiles = files.filter((file: TFile) => {
+			return file.path.includes(this.settings.assistants.assistantDefinitionsPath);
+		})
+	}
+
+	async getSuggestions(query: string): Promise<TFile[]> {
+		const filteredAssistants = this.assistantFiles.filter((assistant) => {
+			return assistant.basename.toLowerCase().includes(query.toLowerCase());
+		});
+
+		return filteredAssistants;
+	}
+
+	renderSuggestion(assistantFile: TFile, el: HTMLElement) {
+		el.createEl('h4', { text: assistantFile.basename, cls: 'assistant-suggestion-header' });
+		el.createEl('h6', { text: assistantFile.path, cls: 'assistant-suggestion-path' });
+	}
+
+	onChooseSuggestion(assistantFile: TFile, evt: MouseEvent | KeyboardEvent) {
+		new AssistantFormModal(this.app, this.settings, assistantFile).open();
+	}
+}
+
+export class AssistantFormModal extends Modal {
 	constructor(app: App, settings: UberBotSettings, assistantFile: TFile | null) {
 		super(app);
 
