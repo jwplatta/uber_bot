@@ -6,32 +6,40 @@ import { Assistant, Content } from "@/src/assistants/types";
 const decompositionTemplate = `GENERAL INSTRUCTIONS
 You are a domain expert. Your task is to break down a complex request into simpler sub-parts. Return the sub-parts as only valid JSON in the ANSWER FORMAT.
 
-USER REQUEST
+<USER-REQUEST>
 {{request}}
+</USER-REQUEST>
 
-AVAILABLE HELPERS
+<AVAILABLE-HELPERS>
 {{helper_names}}
+</AVAILABLE-HELPERS>
 
-AVAILABLE TOOLS
+<AVAILABLE-TOOLS>
 {{tool_names}}
+</AVAILABLE-TOOLS>
 
-ANSWER FORMAT
-{"sub-parts":["<FILL>"]}`
+<ANSWER-FORMAT>
+{"sub-parts":["<FILL>"]}
+</ANSWER-FORMAT>`
 
 const chainOfThoughtTemplate = `GENERAL INSTRUCTIONS
 You are a domain expert. Your task is to provide a step by step solution to a complex request. Return the steps as only valid JSON in the ANSWER FORMAT.
 
-USER REQUEST
+<USER-REQUEST>
 {{request}}
+</USER-REQUEST>
 
-AVAILABLE HELPERS
+<AVAILABLE-HELPERS>
 {{helper_names}}
+</AVAILABLE-HELPERS>
 
-AVAILABLE TOOLS
+<AVAILABLE-TOOLS>
 {{tool_names}}
+</ANSWER-FORMAT>
 
-ANSWER FORMAT
-{"steps":["<FILL>"]}`
+<ANSWER-FORMAT>
+{"steps":["<FILL>"]}
+</ANSWER-FORMAT>`
 ;
 
 const buildHelperPrompt = (promptTemplate: string, request: string, tools: string[], helpers: string[]) => {
@@ -41,8 +49,12 @@ const buildHelperPrompt = (promptTemplate: string, request: string, tools: strin
     .replace("{{helper_names}}", helpers.join("\n- "));
 }
 
+// PROMPT: determine if the task is done.
+
+// PROMPT: determine what the task is.
+
 const controlTemplate = `GENERAL INSTRUCTIONS
-Your task is to answer user requests. If you cannot immediately fulfill the request, then use a HELPER or a TOOL. Please return your response using exactly the OUTPUT-FORMAT. Do not return any other text.
+Your task is to answer user requests. If you cannot fulfill the request, then use a HELPER or a TOOL. Please return your response using exactly the OUTPUT-FORMAT. Do not return any other text.
 
 <REQUEST>
 {{user_request}}
@@ -61,14 +73,14 @@ Your task is to answer user requests. If you cannot immediately fulfill the requ
 </CONTEXTUAL-INFORMATION>
 
 <OUTPUT-FORMAT>
-{"Tool": <string>, "Helper": <string>, "Answer": <string>}
+{"Tool": <string>, "Helper": <string>, "Answer": <string>, "DONE": <boolean>}
 </OUTPUT-FORMAT>`
 
 
 const buildControlPrompt = (tools: string[], helpers: string[], context: string, user_request: string) => {
   return controlTemplate
-    .replace("{{tool_names}}", tools.join("\n- "))
-    .replace("{{helper_names}}", helpers.join("\n- "))
+    .replace("{{tool_names}}", tools.join("\n"))
+    .replace("{{helper_names}}", helpers.join("\n"))
     .replace("{{context}}", context)
     .replace("{{user_request}}", user_request)
 }
@@ -91,22 +103,50 @@ const filterFiles = async (app: App, filter: string) => {
   }
 }
 
+const execTool = async(tool: Tool, args: any) => {
+  try {
+
+    // `${tool.function}()`
+
+    return true;
+  } catch (e) {
+    console.log(e)
+    return false;
+  }
+}
+
+interface Tool {
+  name: string;
+  description: string;
+  function: any;
+  parameters: any;
+}
+
+interface Helper {
+  name: string;
+  description: string;
+  function: any;
+  parameters: any;
+}
+
 interface Step {
   order:  number;
   prompt: string;
-  function: string;
   result: string;
+  message?: string;
+  tool?: Tool;
+  helper?: Helper;
 }
 
 export class UberBot implements Assistant {
   tools = {
     moveFile: {
-      function: moveFile,
+      function: "moveFile",
       description: "Moves a file to the destination path",
       parameters: {
-        file: {
-          type: "TFile",
-          description: "The file to move"
+        fileName: {
+          type: "string",
+          description: "Name of the file"
         },
         destPath: {
           type: "string",
@@ -115,7 +155,7 @@ export class UberBot implements Assistant {
       }
     },
     filterFiles: {
-      function: filterFiles,
+      function: "filterFiles",
       description: "Filters files based on a string",
       parameters: {
         filter: {
@@ -127,7 +167,7 @@ export class UberBot implements Assistant {
   };
   helpers = {
     chainOfThought: {
-      function: chainOfThoughtTemplate,
+      function: "chainOfThoughtTemplate",
       description: "Provides a step by step solution to a complex request",
       parameters: {
         request: {
@@ -145,8 +185,8 @@ export class UberBot implements Assistant {
       }
     },
     problemDecomposition: {
-      function: decompositionTemplate,
-      description: decompositionTemplate,
+      function: "decompositionTemplate",
+      description: "",
       parameters: {
         request: {
           type: "string",
@@ -194,11 +234,11 @@ export class UberBot implements Assistant {
     if (instruction.Answer) {
       return { content: instruction.Answer };
     } else if (instruction.Tool) {
-      console.log("use the tool")
+      console.log("use the tool");
 
       return { content: "use the tool" };
     } else if (instruction.Helper) {
-      console.log("use the helper")
+      console.log("use the helper");
 
       return { content: "use the helper" };
     } else {
@@ -246,15 +286,19 @@ export class UberBot implements Assistant {
   // }
 
   async nextInstruction(context: string, msg: string): Promise<any> {
+    const prompt = buildControlPrompt(
+      Object.keys(this.tools),
+      Object.keys(this.helpers),
+      context,
+      msg
+    );
+    console.log("CONTROL PROMPT: ", prompt);
+
     const completion = await this.ollama.generate({
       model: this.model,
-      prompt: buildControlPrompt(
-        Object.keys(this.tools),
-        Object.keys(this.helpers),
-        context,
-        msg
-      ),
+      prompt: prompt,
     });
+    console.log("CONTROL COMPLETION: ", completion);
 
     try {
       return JSON.parse(completion.response)
