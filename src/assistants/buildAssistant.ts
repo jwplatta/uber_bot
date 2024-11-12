@@ -1,6 +1,6 @@
 import { UberBotSettings } from '@/src/settings/UberBotSettings';
 import { App, TFile } from 'obsidian';
-import { OpenAIModels, OllamaModels } from '@/src/settings/llmModels';
+import { OpenAIModels, OllamaModels } from '@/src/settings/LLMModels';
 import { OpenAIAssistant } from '@/src/assistants/OpenAIAssistant';
 import { OllamaAssistant } from '@/src/assistants/OllamaAssistant';
 import { UberBot } from '@/src/assistants/UberBot';

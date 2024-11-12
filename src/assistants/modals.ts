@@ -1,6 +1,6 @@
 import { SuggestModal, Modal, App, TFile } from 'obsidian';
 import { UberBotSettings } from '@/src/settings/UberBotSettings';
-import { OpenAIModels, OllamaModels } from '@/src/settings/llmModels';
+import { OpenAIModels, OllamaModels } from '@/src/settings/LLMModels';
 
 export class SelectEditAssistanModal extends SuggestModal<TFile> {
 	app: App;
