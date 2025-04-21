@@ -1,9 +1,10 @@
-import { 	App, PluginSettingTab } from 'obsidian';
-import { assistantSettings } from '@/src/settings/AssistantSettings';
-import { chatHistorySettings } from '@/src/settings/ChatHistorySettings';
-import { openAISettings } from '@/src/settings/OpenAISettings';
-import { ollamaSettings } from '@/src/settings/OllamaSettings';
-import UberBot from '@/main';
+import { App, PluginSettingTab } from "obsidian";
+import { assistantSettings } from "@/src/settings/AssistantSettings";
+import { chatHistorySettings } from "@/src/settings/ChatHistorySettings";
+import { openAISettings } from "@/src/settings/OpenAISettings";
+import { ollamaSettings } from "@/src/settings/OllamaSettings";
+import { anthropicSettings } from "@/src/settings/anthropicSettings";
+import UberBot from "@/main";
 
 export class UberBotSettingTab extends PluginSettingTab {
 	plugin: UberBot;
@@ -16,7 +17,7 @@ export class UberBotSettingTab extends PluginSettingTab {
 	display(): void {
 		const { containerEl } = this;
 		containerEl.empty();
-		containerEl.createEl('h1', { text: 'Uber Bot Settings' });
+		containerEl.createEl("h1", { text: "Uber Bot Settings" });
 
 		addHorizontalRule(containerEl);
 		assistantSettings(containerEl, this.plugin, this);
@@ -28,12 +29,15 @@ export class UberBotSettingTab extends PluginSettingTab {
 		openAISettings(containerEl, this.plugin, this);
 
 		addHorizontalRule(containerEl);
+		anthropicSettings(containerEl, this.plugin, this);
+
+		addHorizontalRule(containerEl);
 		ollamaSettings(containerEl, this.plugin, this);
 	}
 }
 
 function addHorizontalRule(containerEl: HTMLElement) {
-	const separator = document.createElement('hr');
-	separator.style.margin = '1rem 0';
+	const separator = document.createElement("hr");
+	separator.style.margin = "1rem 0";
 	containerEl.appendChild(separator);
 }
