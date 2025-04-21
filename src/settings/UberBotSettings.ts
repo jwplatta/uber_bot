@@ -17,10 +17,16 @@ export interface UberBotSettings {
 		models: string[];
 		stream: boolean;
 	},
+	anthropic: {
+		key: string;
+		model: string;
+		stream: boolean;
+	},
 	toggleProfileSettings: boolean,
 	toggleChatHistorySettings: boolean,
 	toggleOpenAISettings: boolean,
-	toggleOllamaSettings: boolean
+	toggleOllamaSettings: boolean,
+	toggleAnthropicSettings: boolean
 }
 
 export const DEFAULT_SETTINGS: UberBotSettings = {
@@ -42,8 +48,14 @@ export const DEFAULT_SETTINGS: UberBotSettings = {
 		models: [],
 		stream: true
 	},
+	anthropic: {
+		key: '',
+		model: 'claude-3-5-haiku-latest',
+		stream: false
+	},
 	toggleProfileSettings: false,
 	toggleChatHistorySettings: false,
 	toggleOpenAISettings: false,
-	toggleOllamaSettings: false
+	toggleOllamaSettings: false,
+	toggleAnthropicSettings: false
 }
